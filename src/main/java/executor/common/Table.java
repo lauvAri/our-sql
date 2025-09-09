@@ -6,6 +6,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 
+/**
+ * 表
+ */
 public interface Table {
     // 数据操作
     CloseableIterator<executor.common.Record> scan();

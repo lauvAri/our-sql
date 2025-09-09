@@ -2,6 +2,9 @@ package executor.common;
 
 import java.util.List;
 
+/**
+ * 索引
+ */
 public interface Index {
     /**
      * 获取索引包含的列名

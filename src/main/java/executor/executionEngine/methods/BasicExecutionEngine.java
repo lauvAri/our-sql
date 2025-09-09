@@ -13,6 +13,9 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+/**
+ * 执行引擎基本操作（增删查改）
+ */
 public class BasicExecutionEngine {
     //建表
     public static int executeCreateTable(StorageEngine storage,CreateTablePlan plan) {

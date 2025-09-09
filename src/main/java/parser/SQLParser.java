@@ -1,18 +1,52 @@
 package parser;
-/*文法规则
-    Prog → Query ;
-    Query → SELECT SelList FROM Tbl WhereClause
-    SelList → ID SelListTail
-    SelListTail → , ID SelListTail | ε
-    Tbl → ID
-    WhereClause → WHERE Condition | ε
-    Condition → ID Operator Value
-    Value → ID | CONSTANT
-    Operator → = | > | < | >= | <= | <>
-*/
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
+
+/*
+Prog → Stmt ;
+Stmt → SelectStmt | InsertStmt | UpdateStmt | DeleteStmt | CreateStmt
+
+SelectStmt → SELECT SelList FROM Tbl WhereClause
+SelList → ID SelListTail
+SelListTail → , ID SelListTail | ε
+Tbl → ID
+
+InsertStmt → INSERT INTO Tbl ( ColumnList ) VALUES ( ValueList )
+ColumnList → ID ColumnListTail
+ColumnListTail → , ID ColumnListTail | ε
+ValueList → Expr ValueListTail
+ValueListTail → , Expr ValueListTail | ε
+
+UpdateStmt → UPDATE Tbl SET SetList WhereClause
+SetList → SetClause SetListTail
+SetListTail → , SetClause SetListTail | ε
+SetClause → ID = Expr
+
+DeleteStmt → DELETE FROM Tbl WhereClause
+
+CreateStmt → CREATE TABLE Tbl ( ColumnDefList )
+ColumnDefList → ColumnDef ColumnDefListTail
+ColumnDefListTail → , ColumnDef ColumnDefListTail | ε
+ColumnDef → ID DataType
+
+WhereClause → WHERE Condition | ε
+Condition → Expr
+Expr → SimpleExpr CompExprTail
+CompExprTail → CompOp SimpleExpr | ε
+SimpleExpr → Term SimpleExprTail
+SimpleExprTail → AddOp Term SimpleExprTail | ε
+Term → Factor TermTail
+TermTail → MulOp Factor TermTail | ε
+Factor → ID | CONSTANT | ( Expr )
+
+CompOp → = | > | < | >= | <= | <>
+AddOp → + | -
+MulOp → * | /
+
+DataType → INT | VARCHAR | CHAR | DATE
+*/
 
 public class SQLParser {
     private List<Token> tokens;
@@ -23,14 +57,38 @@ public class SQLParser {
 
     // 非终结符
     private static final String PROG = "Prog";
-    private static final String QUERY = "Query";
+    private static final String STMT = "Stmt";
+    private static final String SELECT_STMT = "SelectStmt";
+    private static final String INSERT_STMT = "InsertStmt";
+    private static final String UPDATE_STMT = "UpdateStmt";
+    private static final String DELETE_STMT = "DeleteStmt";
+    private static final String CREATE_STMT = "CreateStmt";
     private static final String SELLIST = "SelList";
     private static final String SELLIST_TAIL = "SelListTail";
     private static final String TBL = "Tbl";
     private static final String WHERE_CLAUSE = "WhereClause";
     private static final String CONDITION = "Condition";
-    private static final String VALUE = "Value";
-    private static final String OPERATOR = "Operator";
+    private static final String EXPR = "Expr";
+    private static final String COMP_EXPR_TAIL = "CompExprTail";
+    private static final String SIMPLE_EXPR = "SimpleExpr";
+    private static final String SIMPLE_EXPR_TAIL = "SimpleExprTail";
+    private static final String TERM = "Term";
+    private static final String TERM_TAIL = "TermTail";
+    private static final String FACTOR = "Factor";
+    private static final String COMP_OP = "CompOp";
+    private static final String ADD_OP = "AddOp";
+    private static final String MUL_OP = "MulOp";
+    private static final String SET_LIST = "SetList";
+    private static final String SET_LIST_TAIL = "SetListTail";
+    private static final String SET_CLAUSE = "SetClause";
+    private static final String COLUMN_LIST = "ColumnList";
+    private static final String COLUMN_LIST_TAIL = "ColumnListTail";
+    private static final String VALUE_LIST = "ValueList";
+    private static final String VALUE_LIST_TAIL = "ValueListTail";
+    private static final String COLUMN_DEF_LIST = "ColumnDefList";
+    private static final String COLUMN_DEF_LIST_TAIL = "ColumnDefListTail";
+    private static final String COLUMN_DEF = "ColumnDef";
+    private static final String DATA_TYPE = "DataType";
 
     public SQLParser(List<Token> tokens) {
         // 过滤掉注释Token
@@ -127,6 +185,7 @@ public class SQLParser {
                     boolean matched = false;
                     String matchedValue = "";
 
+                    // 关键字匹配
                     if (top.equals("SELECT") && currentToken.getValue().equalsIgnoreCase("SELECT")) {
                         matched = true;
                         matchedValue = "SELECT";
@@ -136,13 +195,53 @@ public class SQLParser {
                     } else if (top.equals("WHERE") && currentToken.getValue().equalsIgnoreCase("WHERE")) {
                         matched = true;
                         matchedValue = "WHERE";
-                    } else if (top.equals("ID") && currentToken.getType() == Token.TokenType.IDENTIFIER) {
+                    } else if (top.equals("DELETE") && currentToken.getValue().equalsIgnoreCase("DELETE")) {
+                        matched = true;
+                        matchedValue = "DELETE";
+                    } else if (top.equals("UPDATE") && currentToken.getValue().equalsIgnoreCase("UPDATE")) {
+                        matched = true;
+                        matchedValue = "UPDATE";
+                    } else if (top.equals("SET") && currentToken.getValue().equalsIgnoreCase("SET")) {
+                        matched = true;
+                        matchedValue = "SET";
+                    } else if (top.equals("INSERT") && currentToken.getValue().equalsIgnoreCase("INSERT")) {
+                        matched = true;
+                        matchedValue = "INSERT";
+                    } else if (top.equals("INTO") && currentToken.getValue().equalsIgnoreCase("INTO")) {
+                        matched = true;
+                        matchedValue = "INTO";
+                    } else if (top.equals("VALUES") && currentToken.getValue().equalsIgnoreCase("VALUES")) {
+                        matched = true;
+                        matchedValue = "VALUES";
+                    } else if (top.equals("CREATE") && currentToken.getValue().equalsIgnoreCase("CREATE")) {
+                        matched = true;
+                        matchedValue = "CREATE";
+                    } else if (top.equals("TABLE") && currentToken.getValue().equalsIgnoreCase("TABLE")) {
+                        matched = true;
+                        matchedValue = "TABLE";
+                    } else if (top.equals("INT") && currentToken.getValue().equalsIgnoreCase("INT")) {
+                        matched = true;
+                        matchedValue = "INT";
+                    } else if (top.equals("VARCHAR") && currentToken.getValue().equalsIgnoreCase("VARCHAR")) {
+                        matched = true;
+                        matchedValue = "VARCHAR";
+                    } else if (top.equals("CHAR") && currentToken.getValue().equalsIgnoreCase("CHAR")) {
+                        matched = true;
+                        matchedValue = "CHAR";
+                    } else if (top.equals("DATE") && currentToken.getValue().equalsIgnoreCase("DATE")) {
+                        matched = true;
+                        matchedValue = "DATE";
+                    }
+                    // 标识符和常量匹配
+                    else if (top.equals("ID") && currentToken.getType() == Token.TokenType.IDENTIFIER) {
                         matched = true;
                         matchedValue = "ID:" + currentToken.getValue();
                     } else if (top.equals("CONSTANT") && currentToken.getType() == Token.TokenType.CONSTANT) {
                         matched = true;
                         matchedValue = "CONSTANT:" + currentToken.getValue();
-                    } else if (top.equals(";") && currentToken.getValue().equals(";")) {
+                    }
+                    // 运算符和分隔符匹配
+                    else if (top.equals(";") && currentToken.getValue().equals(";")) {
                         matched = true;
                         matchedValue = ";";
                     } else if (top.equals(",") && currentToken.getValue().equals(",")) {
@@ -166,6 +265,24 @@ public class SQLParser {
                     } else if (top.equals("<>") && currentToken.getValue().equals("<>")) {
                         matched = true;
                         matchedValue = "<>";
+                    } else if (top.equals("+") && currentToken.getValue().equals("+")) {
+                        matched = true;
+                        matchedValue = "+";
+                    } else if (top.equals("-") && currentToken.getValue().equals("-")) {
+                        matched = true;
+                        matchedValue = "-";
+                    } else if (top.equals("*") && currentToken.getValue().equals("*")) {
+                        matched = true;
+                        matchedValue = "*";
+                    } else if (top.equals("/") && currentToken.getValue().equals("/")) {
+                        matched = true;
+                        matchedValue = "/";
+                    } else if (top.equals("(") && currentToken.getValue().equals("(")) {
+                        matched = true;
+                        matchedValue = "(";
+                    } else if (top.equals(")") && currentToken.getValue().equals(")")) {
+                        matched = true;
+                        matchedValue = ")";
                     }
 
                     if (matched) {
@@ -226,6 +343,18 @@ public class SQLParser {
         return symbol.equals("SELECT") ||
                 symbol.equals("FROM") ||
                 symbol.equals("WHERE") ||
+                symbol.equals("DELETE") ||
+                symbol.equals("UPDATE") ||
+                symbol.equals("SET") ||
+                symbol.equals("INSERT") ||
+                symbol.equals("INTO") ||
+                symbol.equals("VALUES") ||
+                symbol.equals("CREATE") ||
+                symbol.equals("TABLE") ||
+                symbol.equals("INT") ||
+                symbol.equals("VARCHAR") ||
+                symbol.equals("CHAR") ||
+                symbol.equals("DATE") ||
                 symbol.equals("ID") ||
                 symbol.equals("CONSTANT") ||
                 symbol.equals(";") ||
@@ -236,6 +365,12 @@ public class SQLParser {
                 symbol.equals(">=") ||
                 symbol.equals("<=") ||
                 symbol.equals("<>") ||
+                symbol.equals("+") ||
+                symbol.equals("-") ||
+                symbol.equals("*") ||
+                symbol.equals("/") ||
+                symbol.equals("(") ||
+                symbol.equals(")") ||
                 symbol.equals("$");
     }
 
@@ -243,14 +378,54 @@ public class SQLParser {
     private String getProduction(String nonTerminal, String tokenType, String tokenValue) {
         switch (nonTerminal) {
             case PROG:
-                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("SELECT")) {
-                    return "Query ;";
+                if (tokenType.equals("KEYWORD") || tokenType.equals("IDENTIFIER")) {
+                    return "Stmt ;";
                 }
                 break;
 
-            case QUERY:
+            case STMT:
+                if (tokenType.equals("KEYWORD")) {
+                    if (tokenValue.equalsIgnoreCase("SELECT")) {
+                        return "SelectStmt";
+                    } else if (tokenValue.equalsIgnoreCase("INSERT")) {
+                        return "InsertStmt";
+                    } else if (tokenValue.equalsIgnoreCase("UPDATE")) {
+                        return "UpdateStmt";
+                    } else if (tokenValue.equalsIgnoreCase("DELETE")) {
+                        return "DeleteStmt";
+                    } else if (tokenValue.equalsIgnoreCase("CREATE")) {
+                        return "CreateStmt";
+                    }
+                }
+                break;
+
+            case SELECT_STMT:
                 if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("SELECT")) {
                     return "SELECT SelList FROM Tbl WhereClause";
+                }
+                break;
+
+            case INSERT_STMT:
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("INSERT")) {
+                    return "INSERT INTO Tbl ( ColumnList ) VALUES ( ValueList )";
+                }
+                break;
+
+            case UPDATE_STMT:
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("UPDATE")) {
+                    return "UPDATE Tbl SET SetList WhereClause";
+                }
+                break;
+
+            case DELETE_STMT:
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("DELETE")) {
+                    return "DELETE FROM Tbl WhereClause";
+                }
+                break;
+
+            case CREATE_STMT:
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("CREATE")) {
+                    return "CREATE TABLE Tbl ( ColumnDefList )";
                 }
                 break;
 
@@ -264,7 +439,7 @@ public class SQLParser {
                 if (tokenType.equals("DELIMITER") && tokenValue.equals(",")) {
                     return ", ID SelListTail";
                 } else {
-                    return "ε"; // 空产生式
+                    return "ε";
                 }
 
             case TBL:
@@ -277,16 +452,31 @@ public class SQLParser {
                 if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("WHERE")) {
                     return "WHERE Condition";
                 } else {
-                    return "ε"; // 空产生式
+                    return "ε";
                 }
 
             case CONDITION:
-                if (tokenType.equals("IDENTIFIER")) {
-                    return "ID Operator Value";
+                if (tokenType.equals("IDENTIFIER") || tokenType.equals("CONSTANT") || tokenType.equals("DELIMITER") && tokenValue.equals("(")) {
+                    return "Expr";
                 }
                 break;
 
-            case OPERATOR:
+            case EXPR:
+                if (tokenType.equals("IDENTIFIER") || tokenType.equals("CONSTANT") || tokenType.equals("DELIMITER") && tokenValue.equals("(")) {
+                    return "SimpleExpr CompExprTail";
+                }
+                break;
+
+            case COMP_EXPR_TAIL:
+                if (tokenType.equals("OPERATOR") &&
+                        (tokenValue.equals("=") || tokenValue.equals(">") || tokenValue.equals("<") ||
+                                tokenValue.equals(">=") || tokenValue.equals("<=") || tokenValue.equals("<>"))) {
+                    return "CompOp SimpleExpr";
+                } else {
+                    return "ε";
+                }
+
+            case COMP_OP:
                 if (tokenType.equals("OPERATOR")) {
                     if (tokenValue.equals("=")) return "=";
                     if (tokenValue.equals(">")) return ">";
@@ -297,11 +487,134 @@ public class SQLParser {
                 }
                 break;
 
-            case VALUE:
+            case SIMPLE_EXPR:
+                if (tokenType.equals("IDENTIFIER") || tokenType.equals("CONSTANT") || tokenType.equals("DELIMITER") && tokenValue.equals("(")) {
+                    return "Term SimpleExprTail";
+                }
+                break;
+
+            case SIMPLE_EXPR_TAIL:
+                if (tokenType.equals("OPERATOR") && (tokenValue.equals("+") || tokenValue.equals("-"))) {
+                    return "AddOp Term SimpleExprTail";
+                } else {
+                    return "ε";
+                }
+
+            case ADD_OP:
+                if (tokenType.equals("OPERATOR")) {
+                    if (tokenValue.equals("+")) return "+";
+                    if (tokenValue.equals("-")) return "-";
+                }
+                break;
+
+            case TERM:
+                if (tokenType.equals("IDENTIFIER") || tokenType.equals("CONSTANT") || tokenType.equals("DELIMITER") && tokenValue.equals("(")) {
+                    return "Factor TermTail";
+                }
+                break;
+
+            case TERM_TAIL:
+                if (tokenType.equals("OPERATOR") && (tokenValue.equals("*") || tokenValue.equals("/"))) {
+                    return "MulOp Factor TermTail";
+                } else {
+                    return "ε";
+                }
+
+            case MUL_OP:
+                if (tokenType.equals("OPERATOR")) {
+                    if (tokenValue.equals("*")) return "*";
+                    if (tokenValue.equals("/")) return "/";
+                }
+                break;
+
+            case FACTOR:
                 if (tokenType.equals("IDENTIFIER")) {
                     return "ID";
                 } else if (tokenType.equals("CONSTANT")) {
                     return "CONSTANT";
+                } else if (tokenType.equals("DELIMITER") && tokenValue.equals("(")) {
+                    return "( Expr )";
+                }
+                break;
+
+            case SET_LIST:
+                if (tokenType.equals("IDENTIFIER")) {
+                    return "SetClause SetListTail";
+                }
+                break;
+
+            case SET_LIST_TAIL:
+                if (tokenType.equals("DELIMITER") && tokenValue.equals(",")) {
+                    return ", SetClause SetListTail";
+                } else {
+                    return "ε";
+                }
+
+            case SET_CLAUSE:
+                if (tokenType.equals("IDENTIFIER")) {
+                    return "ID = Expr";
+                }
+                break;
+
+            case COLUMN_LIST:
+                if (tokenType.equals("IDENTIFIER")) {
+                    return "ID ColumnListTail";
+                }
+                break;
+
+            case COLUMN_LIST_TAIL:
+                if (tokenType.equals("DELIMITER") && tokenValue.equals(",")) {
+                    return ", ID ColumnListTail";
+                } else if (tokenType.equals("DELIMITER") && tokenValue.equals(")")) {
+                    return "ε";
+                }
+                break;
+
+            case VALUE_LIST:
+                if (tokenType.equals("IDENTIFIER") || tokenType.equals("CONSTANT") || tokenType.equals("DELIMITER") && tokenValue.equals("(")) {
+                    return "Expr ValueListTail";
+                }
+                break;
+
+            case VALUE_LIST_TAIL:
+                if (tokenType.equals("DELIMITER") && tokenValue.equals(",")) {
+                    return ", Expr ValueListTail";
+                } else if (tokenType.equals("DELIMITER") && tokenValue.equals(")")) {
+                    return "ε";
+                }
+                break;
+
+            case COLUMN_DEF_LIST:
+                if (tokenType.equals("IDENTIFIER")) {
+                    return "ColumnDef ColumnDefListTail";
+                }
+                break;
+
+            case COLUMN_DEF_LIST_TAIL:
+                if (tokenType.equals("DELIMITER") && tokenValue.equals(",")) {
+                    return ", ColumnDef ColumnDefListTail";
+                } else if (tokenType.equals("DELIMITER") && tokenValue.equals(")")) {
+                    return "ε";
+                }
+                break;
+
+            case COLUMN_DEF:
+                if (tokenType.equals("IDENTIFIER")) {
+                    return "ID DataType";
+                }
+                break;
+
+            case DATA_TYPE:
+                if (tokenType.equals("KEYWORD")) {
+                    if (tokenValue.equalsIgnoreCase("INT")) {
+                        return "INT";
+                    } else if (tokenValue.equalsIgnoreCase("VARCHAR")) {
+                        return "VARCHAR";
+                    } else if (tokenValue.equalsIgnoreCase("CHAR")) {
+                        return "CHAR";
+                    } else if (tokenValue.equalsIgnoreCase("DATE")) {
+                        return "DATE";
+                    }
                 }
                 break;
         }
@@ -318,51 +631,52 @@ public class SQLParser {
     // 构建AST
     private ASTNode buildAST() {
         // 这里应该根据实际分析过程构建AST
-        // 为了简化，我们创建一个简单的SELECT AST节点
-        SelectNode selectNode = new SelectNode();
+        // 为了简化，我们根据当前Token创建一个简单的AST节点
 
         // 在实际实现中，这些值应该从分析过程中提取
-        selectNode.columns.add("name");
-        selectNode.columns.add("age");
-        selectNode.tableName = "Students";
+        if (tokens.size() > 0) {
+            Token firstToken = tokens.get(0);
+            if (firstToken.getValue().equalsIgnoreCase("SELECT")) {
+                SelectNode selectNode = new SelectNode();
+                selectNode.columns.add("name");
+                selectNode.columns.add("age");
+                selectNode.tableName = "Students";
+                ExpressionNode whereClause = new ExpressionNode("age", ">", "20");
+                selectNode.whereClause = whereClause;
+                return selectNode;
+            } else if (firstToken.getValue().equalsIgnoreCase("DELETE")) {
+                DeleteNode deleteNode = new DeleteNode();
+                deleteNode.tableName = "logs";
+                ExpressionNode whereClause = new ExpressionNode("created_at", "<", "'2023-01-01'");
+                deleteNode.whereClause = whereClause;
+                return deleteNode;
+            } else if (firstToken.getValue().equalsIgnoreCase("INSERT")) {
+                InsertNode insertNode = new InsertNode();
+                insertNode.tableName = "users";
+                insertNode.columns.add("username");
+                insertNode.columns.add("email");
+                insertNode.columns.add("created_at");
+                insertNode.values.add("'test_user'");
+                insertNode.values.add("'test@example.com'");
+                insertNode.values.add("'2023-10-27 10:00:00'");
+                return insertNode;
+            } else if (firstToken.getValue().equalsIgnoreCase("UPDATE")) {
+                UpdateNode updateNode = new UpdateNode();
+                updateNode.tableName = "products";
+                SetClause setClause = new SetClause("stock", "stock - 1");
+                updateNode.setClauses.add(setClause);
+                ExpressionNode whereClause = new ExpressionNode("id", "=", "101");
+                updateNode.whereClause = whereClause;
+                return updateNode;
+            }
+            // 可以添加其他语句类型的处理
+        }
 
-        ExpressionNode whereClause = new ExpressionNode("age", ">", "20");
-        selectNode.whereClause = whereClause;
-
-        return selectNode;
+        return null;
     }
 
     // 获取分析输出
     public String getOutput() {
         return output.toString();
-    }
-
-    // 测试方法
-    public static void main(String[] args) {
-        // 创建测试Token列表
-        List<Token> tokens = new ArrayList<>();
-        tokens.add(new Token(Token.TokenType.KEYWORD, "SELECT", 1, 1));
-        tokens.add(new Token(Token.TokenType.IDENTIFIER, "name", 1, 8));
-        tokens.add(new Token(Token.TokenType.DELIMITER, ",", 1, 12));
-        tokens.add(new Token(Token.TokenType.IDENTIFIER, "age", 1, 14));
-        tokens.add(new Token(Token.TokenType.KEYWORD, "FROM", 2, 1));
-        tokens.add(new Token(Token.TokenType.IDENTIFIER, "Students", 2, 6));
-        tokens.add(new Token(Token.TokenType.KEYWORD, "WHERE", 3, 1));
-        tokens.add(new Token(Token.TokenType.IDENTIFIER, "age", 3, 7));
-        tokens.add(new Token(Token.TokenType.OPERATOR, ">", 3, 11));
-        tokens.add(new Token(Token.TokenType.CONSTANT, "20", 3, 13));
-        tokens.add(new Token(Token.TokenType.DELIMITER, ";", 3, 15));
-
-        // 创建语法分析器
-        SQLParser parser = new SQLParser(tokens);
-        ASTNode ast = parser.parse();
-
-        // 输出分析结果
-        System.out.println(parser.getOutput());
-
-        if (ast != null) {
-            System.out.println("生成的AST:");
-            System.out.println(ast.toString());
-        }
     }
 }

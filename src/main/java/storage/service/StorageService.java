@@ -55,9 +55,22 @@ public class StorageService {
         if (page == null) {
             return false;
         }
+        logger.info("write data to page: {}", pageId);
         System.arraycopy(data, 0, page.getData(), 0, Page.PAGE_SIZE);
         page.setDirty(true);
         bufferPoolManager.unpinPage(pageId, true);
         return true;
+    }
+
+    public int allocatePage() throws IOException {
+        return bufferPoolManager.newPage().getPageId();
+    }
+
+    public void flushAllPages() throws IOException {
+        bufferPoolManager.flushAllPages();
+    }
+
+    public void close() throws IOException {
+        diskManager.close();
     }
 }

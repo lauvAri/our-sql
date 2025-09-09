@@ -3,11 +3,13 @@ package storage.page;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import common.StorageConfig;
+
 public class Page {
-    public static final int PAGE_SIZE = 4096; // 页大小定义为4KB
+    public static final int PAGE_SIZE = StorageConfig.PAGE_SIZE; // 页大小定义为4KB
     private final ByteBuffer data; // 使用ByteBuffer可以方便地读写基本类型
     private int pageId;
-    private int pinCount;
+    private int pinCount; // 页面被使用时，pinCount++; 页面使用完后，pinCount--
     private boolean isDirty;
 
     public Page() {

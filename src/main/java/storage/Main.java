@@ -32,6 +32,7 @@ public class Main {
 
         Page page2 = bufferPoolManager.newPage();
         page2.writeString(200, "Content in Page 2");
+        page2.writeString(200, "new Content in Page2"); // 该页写入新的内容
         logger.info("Created page 2 and wrote content.");
 
         // 释放页面，使其可以被淘汰
@@ -44,6 +45,7 @@ public class Main {
         logger.info("Buffer pool is full. Fetching a new page should trigger eviction.");
         // 由于page0是最近最少使用的，它应该被淘汰
         Page page3 = bufferPoolManager.newPage();
+        page3.writeString(0, "page3");
         logger.info("Created new page {}. Page 0 should have been evicted and flushed.", page3.getPageId());
         bufferPoolManager.unpinPage(page3.getPageId(), false);
 
@@ -72,7 +74,7 @@ public class Main {
         newDiskManager.close();
 
         // 清理
-        //new File(DB_FILE).delete();
-        logger.info("\nTest finished. Database file cleaned up.");
+        // new File(DB_FILE).delete();
+        // logger.info("\nTest finished. Database file cleaned up.");
     }
 }

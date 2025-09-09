@@ -102,19 +102,31 @@ public class BufferPoolManager {
                 return null;
             }
 
-            int newPageId = diskManager.allocatePage();
-            Page newPage = pages[frameId];
+            // 先保存旧页的pageId
+            int oldPageId = pages[frameId].getPageId();
 
-            if (newPage.isDirty()) {
-                diskManager.writePage(newPage.getPageId(), newPage.getData());
+            // 如果旧页是脏的，写回磁盘
+            if (pages[frameId].isDirty() && oldPageId != -1) {
+                diskManager.writePage(oldPageId, pages[frameId].getData());
             }
-            if (newPage.getPageId() != -1) {
-                pageTable.remove(newPage.getPageId());
+            // // 从页表中移除旧页的映射
+            if (oldPageId != -1) {
+                pageTable.remove(oldPageId);
             }
+
+            // 分配新页
+            int newPageId = diskManager.allocatePage();
+            Page newPage = new Page();
+            pages[frameId] = newPage;
+            // Page newPage = pages[frameId];
 
             newPage.setPageId(newPageId);
-            newPage.pin();
             newPage.setDirty(false);
+            // 重置pinCount
+            while (newPage.getPinCount() > 0) {
+                newPage.unpin();
+            }
+            newPage.pin();
 
             pageTable.put(newPageId, frameId);
             replacer.pin(frameId);

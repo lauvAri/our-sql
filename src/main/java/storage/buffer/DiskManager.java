@@ -13,9 +13,15 @@ public class DiskManager {
     private static final Logger logger = LoggerFactory.getLogger(DiskManager.class);
     private final RandomAccessFile dbFile;
     private final AtomicInteger pageCounter;
+    private final String prePath = System.getProperty("user.home") + File.separator + ".oursql" + File.separator;
 
     public DiskManager(String dbFilePath) throws IOException {
-        File file = new File(dbFilePath);
+        File file = new File(prePath + dbFilePath);
+        // 确保目录存在
+        File parent = file.getParentFile();
+        if (parent != null && !parent.exists()) {
+            parent.mkdirs();
+        }
         this.dbFile = new RandomAccessFile(file, "rw");
         long fileSize = dbFile.length();
         this.pageCounter = new AtomicInteger((int) Math.ceilDiv(fileSize, Page.PAGE_SIZE)); // 设置为向上取整

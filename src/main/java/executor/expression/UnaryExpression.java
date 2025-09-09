@@ -2,6 +2,9 @@ package executor.expression;
 
 import executor.common.Record;
 
+/**
+ * 一元表达式
+ */
 public class UnaryExpression implements Expression {
     public enum Operator {
         NOT("NOT"), IS_NULL("IS NULL"), IS_NOT_NULL("IS NOT NULL");

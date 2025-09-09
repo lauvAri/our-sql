@@ -5,6 +5,9 @@ import executor.common.Record;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 函数表达式
+ */
 public class FunctionExpression implements Expression {
     private final String functionName;
     private final List<Expression> arguments;

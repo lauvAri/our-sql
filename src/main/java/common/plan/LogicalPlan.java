@@ -5,7 +5,9 @@ public abstract class LogicalPlan {
         CREATE_TABLE,
         INSERT,
         SELECT,
-        DELETE
+        DELETE,
+        CREATE_INDEX,
+        DROP_INDEX,
     }
 
     public abstract OperatorType getOperatorType();

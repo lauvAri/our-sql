@@ -7,4 +7,7 @@ public record ColumnDefinition(
         ColumnType type,
         int length
 ) {
+    public boolean isEmpty() {
+        return length == 0;
+    }
 }

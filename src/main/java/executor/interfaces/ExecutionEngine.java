@@ -114,7 +114,7 @@ public class ExecutionEngine {
         Table table = storage.openTable(plan.getTableName());
         List<Record> results = new ArrayList<>();
 
-        try (Iterator<Record> iterator = table.scan()) {
+        try (CloseableIterator<Record> iterator = table.scan()) {
             while (iterator.hasNext()) {
                 Record record = iterator.next();
 
@@ -133,6 +133,10 @@ public class ExecutionEngine {
     }
 
     private boolean evaluateFilter(Expression filter, Record record) {
+        if (filter == null) {
+            return false; // 空表达式默认返回 false
+        }
+
         // 递归计算表达式树
         if (filter instanceof BinaryExpression) {
             BinaryExpression expr = (BinaryExpression) filter;
@@ -140,13 +144,39 @@ public class ExecutionEngine {
             Object right = evaluateExpression(expr.getRight(), record);
 
             return switch (expr.getOperator()) {
-                case "=" -> Objects.equals(left, right);
-                case ">" -> ((Comparable) left).compareTo(right) > 0;
-                case "<" -> ... // 其他操作符
+                case EQ -> Objects.equals(left, right);
+                case NEQ -> !Objects.equals(left, right);
+                case GT -> compare(left, right) > 0;
+                case LT -> compare(left, right) < 0;
+                case GTE -> compare(left, right) >= 0;
+                case LTE -> compare(left, right) <= 0;
+                case AND -> toBoolean(left) && toBoolean(right);
+                case OR -> toBoolean(left) || toBoolean(right);
                 default -> throw new ExecutionException("Unsupported operator: " + expr.getOperator());
             };
         }
-        // 处理其他表达式类型...
+        else if (filter instanceof UnaryExpression) {
+            UnaryExpression expr = (UnaryExpression) filter;
+            Object value = evaluateExpression(expr.getOperand(), record);
+
+            return switch (expr.getOperator()) {
+                case NOT -> !toBoolean(value);
+                default -> throw new ExecutionException("Unsupported unary operator: " + expr.getOperator());
+            };
+        }
+        else if (filter instanceof ColumnReference) {
+            // 直接引用列名时，非 null 值视为 true
+            Object value = record.getValue(((ColumnReference) filter).getColumnName());
+            return value != null;
+        }
+        else if (filter instanceof Literal) {
+            // 常量表达式直接求值
+            Object value = ((Literal) filter).getValue();
+            return toBoolean(value);
+        }
+        else {
+            throw new ExecutionException("Unsupported expression type: " + filter.getClass().getSimpleName());
+        }
     }
 
     private Record projectColumns(Record source, List<String> columns) {
@@ -269,4 +299,20 @@ public class ExecutionEngine {
         return ((Comparable)left).compareTo(right);
     }
 
+    // 安全转换为 boolean（支持常见真值逻辑）
+    private boolean toBoolean(Object value) {
+        if (value == null) {
+            return false;
+        }
+        if (value instanceof Boolean) {
+            return (Boolean) value;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).doubleValue() != 0;
+        }
+        if (value instanceof String) {
+            return !((String) value).isEmpty();
+        }
+        return true; // 其他非 null 对象视为 true
+    }
 }

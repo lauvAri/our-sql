@@ -10,4 +10,8 @@ public record Record(Map<String, Object> fields) {
     public boolean hasField(String fieldName) {
         return fields.containsKey(fieldName);
     }
+
+    public Object getValue(String fieldName) {
+        return fields.get(fieldName);
+    }
 }

@@ -1,6 +1,6 @@
 package common.plan;
 
-import java.beans.Expression;
+import executor.expression.Expression;
 
 public class DeletePlan extends LogicalPlan {
     private final String tableName;

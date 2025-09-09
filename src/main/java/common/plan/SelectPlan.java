@@ -1,7 +1,8 @@
 package common.plan;
 
-import java.beans.Expression;
 import java.util.List;
+
+import executor.expression.Expression;
 
 public class SelectPlan extends LogicalPlan {
     private final String tableName;

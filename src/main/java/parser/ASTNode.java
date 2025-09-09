@@ -56,7 +56,6 @@ class InsertNode extends ASTNode {
     public List<String> columns;
     public List<Object> values;
 
-
     public InsertNode() {
         this.type = "INSERT";
         this.columns = new ArrayList<>();
@@ -105,9 +104,9 @@ class CreateTableNode extends ASTNode {
 // SET子句（用于UPDATE语句）
 class SetClause {
     public String column;
-    public Object value;
+    public ExpressionNode value;  // 修改为ExpressionNode类型
 
-    public SetClause(String column, Object value) {
+    public SetClause(String column, ExpressionNode value) {
         this.column = column;
         this.value = value;
     }
@@ -117,8 +116,6 @@ class SetClause {
         return column + " = " + value;
     }
 }
-
-
 
 // 列定义
 class ColumnDefinition {

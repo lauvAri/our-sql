@@ -38,7 +38,7 @@ public class CatalogManager {
                 tableName,
                 schema.toJson(),  // 将表结构转为JSON存储
                 System.currentTimeMillis()
-        );
+        ).toRecord();
 
         // 写入目录表
         catalogTable.insert(record);

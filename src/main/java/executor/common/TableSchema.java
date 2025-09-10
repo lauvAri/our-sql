@@ -1,7 +1,7 @@
 package executor.common;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import executor.common.ColumnDefinition;
 
@@ -37,6 +37,29 @@ public record TableSchema(
         return null;
     }
 
+    /**
+     * 序列化为 JSON 字符串
+     */
+    public String toJson() {
+        try {
+            return objectMapper.writeValueAsString(this);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("序列化 TableSchema 失败", e);
+        }
+    }
+
+    /**
+     * 从 JSON 字符串反序列化
+     */
+    public static TableSchema fromJson(String json) {
+        try {
+            return objectMapper.readValue(json, TableSchema.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("解析 TableSchema JSON 失败", e);
+        }
+    }
+
+
     // 新增 Builder 类
     public static class Builder {
         private String tableName;
@@ -58,14 +81,6 @@ public record TableSchema(
 
         public TableSchema build() {
             return new TableSchema(tableName, List.copyOf(columns));  // 确保不可变
-        }
-
-        public static TableSchema fromJson(String json) {
-            try {
-                return objectMapper.readValue(json, TableSchema.class);
-            } catch (JsonProcessingException e) {
-                throw new IllegalArgumentException("无效的 JSON 格式", e);
-            }
         }
     }
 }

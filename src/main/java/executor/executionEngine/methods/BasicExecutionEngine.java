@@ -9,6 +9,7 @@ import executor.common.Record;
 import executor.expression.*;
 import executor.storageEngine.StorageEngine;
 
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -77,6 +78,7 @@ public class BasicExecutionEngine {
                 case FLOAT -> Double.parseDouble(value.toString());
                 case BOOLEAN -> Boolean.parseBoolean(value.toString());
                 case VARCHAR -> value.toString();
+                case TIMESTAMP -> Timestamp.valueOf(value.toString());
             };
         } catch (Exception e) {
             throw new ExecutionException("Type conversion failed: " + e.getMessage());

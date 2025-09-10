@@ -19,5 +19,7 @@ public interface Table {
 
     // 元数据
     TableSchema getSchema();
+
+    Record getRecord(String tableName);
 }
 

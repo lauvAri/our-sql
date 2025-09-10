@@ -20,6 +20,7 @@ public class StorageEngineImpl implements StorageEngine {
     public StorageEngineImpl(StorageService storageService) {
         this.storageService = storageService;
     }
+
     @Override
     public Table openTable(String tableName) {
         return null;

@@ -1,7 +1,7 @@
 package executor.executionEngine;
 
-/*
-执行结果
+/**
+ * 执行结果
  */
 
 public class ExecutionResult {

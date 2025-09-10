@@ -9,6 +9,9 @@ import executor.common.TableSchema;
 
 import java.util.List;
 
+/**
+ * 存储引擎接口
+ */
 public interface StorageEngine {
     // 表操作
     Table openTable(String tableName);

@@ -4,6 +4,11 @@ import executor.common.ColumnDefinition;
 
 import java.util.List;
 
+/**
+ * 不可变的表结构
+ * @param tableName
+ * @param columns
+ */
 public record TableSchema(
         String tableName,
         List<ColumnDefinition> columns

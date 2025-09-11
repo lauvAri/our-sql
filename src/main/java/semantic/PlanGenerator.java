@@ -42,6 +42,12 @@ public class PlanGenerator {
                 case "DELETE":
                     plan = generateDeletePlan(ast);
                     break;
+                case "CREATE_INDEX":
+                    plan = generateCreateIndexPlan(ast);
+                    break;
+                case "DROP_INDEX":
+                    plan = generateDropIndexPlan(ast);
+                    break;
                 default:
                     addError(SemanticError.ErrorType.SYNTAX_ERROR, "UNKNOWN", 
                            "不支持的语句类型: " + nodeType);
@@ -216,6 +222,68 @@ public class PlanGenerator {
     }
     
     /**
+     * 生成CREATE INDEX执行计划
+     */
+    private LogicalPlan generateCreateIndexPlan(ASTNode ast) {
+        // 注意：这里需要根据实际的AST结构来获取索引相关信息
+        // 由于当前语法分析器可能还不支持索引语法，这里提供一个框架实现
+        
+        // 假设索引AST包含索引名、表名、列名等信息
+        // 实际实现需要根据AST的具体结构来调整
+        
+        addError(SemanticError.ErrorType.SYNTAX_ERROR, "CREATE INDEX", 
+               "CREATE INDEX语句暂未完全实现，需要扩展语法分析器支持");
+        return null;
+        
+        // 未来的实现示例：
+        /*
+        String indexName = ASTFieldAccessor.getCreateIndexName(ast);
+        String tableName = ASTFieldAccessor.getCreateIndexTableName(ast);
+        List<String> columns = ASTFieldAccessor.getCreateIndexColumns(ast);
+        boolean isUnique = ASTFieldAccessor.getCreateIndexUnique(ast);
+        
+        // 检查表是否存在
+        if (!catalog.tableExists(tableName)) {
+            addError(SemanticError.ErrorType.TABLE_NOT_FOUND, "CREATE INDEX", 
+                   "表 '" + tableName + "' 不存在");
+            return null;
+        }
+        
+        TableSchema table = catalog.getTable(tableName);
+        
+        // 检查列是否存在
+        for (String column : columns) {
+            if (!table.hasColumn(column)) {
+                addError(SemanticError.ErrorType.COLUMN_NOT_FOUND, "CREATE INDEX", 
+                       "列 '" + column + "' 在表 '" + tableName + "' 中不存在");
+            }
+        }
+        
+        return new CreateIndexPlan(indexName, tableName, columns, isUnique);
+        */
+    }
+    
+    /**
+     * 生成DROP INDEX执行计划
+     */
+    private LogicalPlan generateDropIndexPlan(ASTNode ast) {
+        // 注意：这里需要根据实际的AST结构来获取索引相关信息
+        // 由于当前语法分析器可能还不支持索引语法，这里提供一个框架实现
+        
+        addError(SemanticError.ErrorType.SYNTAX_ERROR, "DROP INDEX", 
+               "DROP INDEX语句暂未完全实现，需要扩展语法分析器支持");
+        return null;
+        
+        // 未来的实现示例：
+        /*
+        String indexName = ASTFieldAccessor.getDropIndexName(ast);
+        String tableName = ASTFieldAccessor.getDropIndexTableName(ast);
+        
+        return new DropIndexPlan(indexName, tableName);
+        */
+    }
+    
+    /**
      * 构建表达式
      */
     private Expression buildExpression(Object expr, TableSchema table) {
@@ -365,5 +433,95 @@ public class PlanGenerator {
      */
     public boolean hasErrors() {
         return !errors.isEmpty();
+    }
+    
+    /**
+     * 验证LogicalPlan对象类型是否正确
+     */
+    public static String validatePlanType(LogicalPlan plan) {
+        if (plan == null) {
+            return "Plan is null";
+        }
+        
+        StringBuilder validation = new StringBuilder();
+        validation.append("Plan type: ").append(plan.getClass().getSimpleName()).append("\n");
+        validation.append("Operator type: ").append(plan.getOperatorType()).append("\n");
+        
+        // 验证对象类型和操作类型的一致性
+        switch (plan.getOperatorType()) {
+            case SELECT:
+                if (!(plan instanceof SelectPlan)) {
+                    validation.append("❌ 错误: SELECT操作应该创建SelectPlan对象\n");
+                } else {
+                    validation.append("✅ 正确: SELECT操作创建了SelectPlan对象\n");
+                    SelectPlan selectPlan = (SelectPlan) plan;
+                    validation.append("  - 表: ").append(selectPlan.getTableName()).append("\n");
+                    validation.append("  - 列: ").append(selectPlan.getColumns()).append("\n");
+                    validation.append("  - 过滤条件: ").append(selectPlan.getFilter()).append("\n");
+                }
+                break;
+                
+            case CREATE_TABLE:
+                if (!(plan instanceof CreateTablePlan)) {
+                    validation.append("❌ 错误: CREATE_TABLE操作应该创建CreateTablePlan对象\n");
+                } else {
+                    validation.append("✅ 正确: CREATE_TABLE操作创建了CreateTablePlan对象\n");
+                    CreateTablePlan createPlan = (CreateTablePlan) plan;
+                    validation.append("  - 表: ").append(createPlan.getTableName()).append("\n");
+                    validation.append("  - 列: ").append(createPlan.getColumns()).append("\n");
+                }
+                break;
+                
+            case INSERT:
+                if (!(plan instanceof InsertPlan)) {
+                    validation.append("❌ 错误: INSERT操作应该创建InsertPlan对象\n");
+                } else {
+                    validation.append("✅ 正确: INSERT操作创建了InsertPlan对象\n");
+                    InsertPlan insertPlan = (InsertPlan) plan;
+                    validation.append("  - 表: ").append(insertPlan.getTableName()).append("\n");
+                    validation.append("  - 值: ").append(insertPlan.getValues()).append("\n");
+                }
+                break;
+                
+            case DELETE:
+                if (!(plan instanceof DeletePlan)) {
+                    validation.append("❌ 错误: DELETE操作应该创建DeletePlan对象\n");
+                } else {
+                    validation.append("✅ 正确: DELETE操作创建了DeletePlan对象\n");
+                    DeletePlan deletePlan = (DeletePlan) plan;
+                    validation.append("  - 表: ").append(deletePlan.getTableName()).append("\n");
+                    validation.append("  - 过滤条件: ").append(deletePlan.getFilter()).append("\n");
+                }
+                break;
+                
+            case CREATE_INDEX:
+                if (!(plan instanceof CreateIndexPlan)) {
+                    validation.append("❌ 错误: CREATE_INDEX操作应该创建CreateIndexPlan对象\n");
+                } else {
+                    validation.append("✅ 正确: CREATE_INDEX操作创建了CreateIndexPlan对象\n");
+                    CreateIndexPlan indexPlan = (CreateIndexPlan) plan;
+                    validation.append("  - 索引: ").append(indexPlan.getIndexName()).append("\n");
+                    validation.append("  - 表: ").append(indexPlan.getTableName()).append("\n");
+                    validation.append("  - 列: ").append(indexPlan.getColumns()).append("\n");
+                    validation.append("  - 唯一: ").append(indexPlan.isUnique()).append("\n");
+                }
+                break;
+                
+            case DROP_INDEX:
+                if (!(plan instanceof DropIndexPlan)) {
+                    validation.append("❌ 错误: DROP_INDEX操作应该创建DropIndexPlan对象\n");
+                } else {
+                    validation.append("✅ 正确: DROP_INDEX操作创建了DropIndexPlan对象\n");
+                    DropIndexPlan dropPlan = (DropIndexPlan) plan;
+                    validation.append("  - 索引: ").append(dropPlan.getIndexName()).append("\n");
+                    validation.append("  - 表: ").append(dropPlan.getTableName()).append("\n");
+                }
+                break;
+                
+            default:
+                validation.append("❓ 未知的操作类型: ").append(plan.getOperatorType()).append("\n");
+        }
+        
+        return validation.toString();
     }
 }

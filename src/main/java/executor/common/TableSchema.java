@@ -7,6 +7,7 @@ import executor.common.ColumnDefinition;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 不可变的表结构
@@ -59,6 +60,36 @@ public record TableSchema(
         }
     }
 
+    /**
+     * 验证记录是否符合表结构定义
+     * @param record 待验证的记录
+     * @return 是否验证通过
+     */
+    public boolean validate(Record record) {
+       /*
+       todo 增加必填字段检查
+       */
+
+//        // 检查必填字段
+//        for (String field : requiredFields) {
+//            if (!record.containsField(field)) {
+//                return false;
+//            }
+//        }
+
+        // 检查字段类型
+        for (ColumnDefinition column : columns) {
+            String field = column.name();
+            ColumnType expectedType = column.type();
+            Object value = record.getValue(field);
+
+            if (value != null && !expectedType.getJavaType().isInstance(value)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     // 新增 Builder 类
     public static class Builder {

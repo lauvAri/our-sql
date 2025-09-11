@@ -25,6 +25,11 @@ public class SQLParser {
     private static final String SELLIST_TAIL = "SelListTail";
     private static final String TBL = "Tbl";
     private static final String WHERE_CLAUSE = "WhereClause";
+    private static final String LOGICAL_EXPRESSION = "LogicalExpression";
+    private static final String LOGICAL_EXPRESSION_TAIL = "LogicalExpressionTail";
+    private static final String LOGICAL_TERM = "LogicalTerm";
+    private static final String LOGICAL_TERM_TAIL = "LogicalTermTail";
+    private static final String LOGICAL_FACTOR = "LogicalFactor";
     private static final String CONDITION = "Condition";
     private static final String VALUE = "Value";
     private static final String OPERATOR = "Operator";
@@ -260,6 +265,30 @@ public class SQLParser {
                         matched = true;
                         matchedValue = "FALSE";
                         astStack.push("FALSE");
+                    } else if (top.equals("AND") && currentToken.getValue().equalsIgnoreCase("AND")) {
+                        matched = true;
+                        matchedValue = "AND";
+                        astStack.push("AND");
+                    } else if (top.equals("OR") && currentToken.getValue().equalsIgnoreCase("OR")) {
+                        matched = true;
+                        matchedValue = "OR";
+                        astStack.push("OR");
+                    } else if (top.equals("NOT") && currentToken.getValue().equalsIgnoreCase("NOT")) {
+                        matched = true;
+                        matchedValue = "NOT";
+                        astStack.push("NOT");
+                    } else if (top.equals("IN") && currentToken.getValue().equalsIgnoreCase("IN")) {
+                        matched = true;
+                        matchedValue = "IN";
+                        astStack.push("IN");
+                    } else if (top.equals("IS") && currentToken.getValue().equalsIgnoreCase("IS")) {
+                        matched = true;
+                        matchedValue = "IS";
+                        astStack.push("IS");
+                    } else if (top.equals("NULL") && currentToken.getValue().equalsIgnoreCase("NULL")) {
+                        matched = true;
+                        matchedValue = "NULL";
+                        astStack.push("NULL");
                     } else if (top.equals("*") && currentToken.getValue().equals("*")) {
                         matched = true;
                         matchedValue = "*";
@@ -386,7 +415,7 @@ public class SQLParser {
 
                 case WHERE_CLAUSE:
                     // WHERE子句
-                    if (production.equals("WHERE Condition")) {
+                    if (production.equals("WHERE LogicalExpression")) {
                         // 标记WHERE子句开始
                         astStack.push("WHERE_START");
                     } else if (production.equals("ε")) {
@@ -443,6 +472,15 @@ public class SQLParser {
                     // 数据类型，不需要特殊处理（已在终结符匹配时处理）
                     break;
 
+                case LOGICAL_EXPRESSION:
+                case LOGICAL_EXPRESSION_TAIL:
+                case LOGICAL_TERM:
+                case LOGICAL_TERM_TAIL:
+                case LOGICAL_FACTOR:
+                    // 逻辑表达式相关的非终结符，暂时不做特殊处理
+                    // 在基本功能完成后再添加复杂的AST构建
+                    break;
+
                 default:
                     // 对于未处理的非终结符，不做任何操作
                     break;
@@ -465,6 +503,12 @@ public class SQLParser {
                 symbol.equals("DELETE") ||
                 symbol.equals("FROM") ||
                 symbol.equals("WHERE") ||
+                symbol.equals("AND") ||
+                symbol.equals("OR") ||
+                symbol.equals("NOT") ||
+                symbol.equals("IN") ||
+                symbol.equals("IS") ||
+                symbol.equals("NULL") ||
                 symbol.equals("ID") ||
                 symbol.equals("CONSTANT") ||
                 symbol.equals(";") ||
@@ -562,7 +606,7 @@ public class SQLParser {
 
             case WHERE_CLAUSE:
                 if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("WHERE")) {
-                    return "WHERE Condition";
+                    return "WHERE LogicalExpression";
                 } else {
                     return "ε"; // 空产生式
                 }
@@ -651,6 +695,44 @@ public class SQLParser {
                 } else {
                     return "ε"; // 空产生式
                 }
+
+            case LOGICAL_EXPRESSION:
+                if (tokenType.equals("IDENTIFIER") || tokenType.equals("KEYWORD") && 
+                    (tokenValue.equalsIgnoreCase("NOT") || tokenValue.equals("("))) {
+                    return "LogicalTerm LogicalExpressionTail";
+                }
+                break;
+
+            case LOGICAL_EXPRESSION_TAIL:
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("OR")) {
+                    return "OR LogicalTerm LogicalExpressionTail";
+                } else {
+                    return "ε"; // 空产生式
+                }
+
+            case LOGICAL_TERM:
+                if (tokenType.equals("IDENTIFIER") || tokenType.equals("KEYWORD") && 
+                    (tokenValue.equalsIgnoreCase("NOT") || tokenValue.equals("("))) {
+                    return "LogicalFactor LogicalTermTail";
+                }
+                break;
+
+            case LOGICAL_TERM_TAIL:
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("AND")) {
+                    return "AND LogicalFactor LogicalTermTail";
+                } else {
+                    return "ε"; // 空产生式
+                }
+
+            case LOGICAL_FACTOR:
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("NOT")) {
+                    return "NOT LogicalFactor";
+                } else if (tokenType.equals("DELIMITER") && tokenValue.equals("(")) {
+                    return "( LogicalExpression )";
+                } else if (tokenType.equals("IDENTIFIER")) {
+                    return "Condition";
+                }
+                break;
         }
 
         return null;

@@ -3,7 +3,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 // AST节点基类
-abstract class ASTNode {
+public abstract class ASTNode {
     protected String type;
 
     public String getType() {

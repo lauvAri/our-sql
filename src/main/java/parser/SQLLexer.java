@@ -51,8 +51,9 @@ public class SQLLexer {
     private static final String[] KEYWORDS = {
             "SELECT", "FROM", "WHERE", "CREATE", "TABLE", "INSERT", "INTO",
             "VALUES", "DELETE", "UPDATE", "SET", "AND", "OR", "NOT", "NULL",
-            "INT", "VARCHAR", "CHAR", "DATE", "PRIMARY", "KEY", "DROP", "ALTER",
-            "CHECK", "IN"
+            "INT", "VARCHAR", "CHAR", "DATE", "FLOAT", "DOUBLE", "BOOLEAN", 
+            "PRIMARY", "KEY", "DROP", "ALTER", "CHECK", "IN", "JOIN", "ON",
+            "TRUE", "FALSE"
     };
 
     // 运算符列表

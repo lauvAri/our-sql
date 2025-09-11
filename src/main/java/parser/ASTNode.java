@@ -1,5 +1,4 @@
 package parser;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,21 +31,19 @@ class SelectNode extends ASTNode {
     }
 }
 
-// UPDATE语句节点
-class UpdateNode extends ASTNode {
+// CREATE TABLE语句节点
+class CreateTableNode extends ASTNode {
     public String tableName;
-    public List<SetClause> setClauses;
-    public ExpressionNode whereClause;
+    public List<ColumnDefinition> columns;
 
-    public UpdateNode() {
-        this.type = "UPDATE";
-        this.setClauses = new ArrayList<>();
+    public CreateTableNode() {
+        this.type = "CREATE_TABLE";
+        this.columns = new ArrayList<>();
     }
 
     @Override
     public String toString() {
-        return String.format("UPDATE %s SET %s WHERE %s",
-                tableName, setClauses, whereClause != null ? whereClause.toString() : "NULL");
+        return String.format("CREATE TABLE %s (%s)", tableName, columns);
     }
 }
 
@@ -82,38 +79,6 @@ class DeleteNode extends ASTNode {
     public String toString() {
         return String.format("DELETE FROM %s WHERE %s",
                 tableName, whereClause != null ? whereClause.toString() : "NULL");
-    }
-}
-
-// CREATE TABLE语句节点
-class CreateTableNode extends ASTNode {
-    public String tableName;
-    public List<ColumnDefinition> columns;
-
-    public CreateTableNode() {
-        this.type = "CREATE_TABLE";
-        this.columns = new ArrayList<>();
-    }
-
-    @Override
-    public String toString() {
-        return String.format("CREATE TABLE %s (%s)", tableName, columns);
-    }
-}
-
-// SET子句（用于UPDATE语句）
-class SetClause {
-    public String column;
-    public ExpressionNode value;  // 修改为ExpressionNode类型
-
-    public SetClause(String column, ExpressionNode value) {
-        this.column = column;
-        this.value = value;
-    }
-
-    @Override
-    public String toString() {
-        return column + " = " + value;
     }
 }
 

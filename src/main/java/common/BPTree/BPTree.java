@@ -1,9 +1,14 @@
 package common.BPTree;
 
+import java.io.Serial;
+import java.io.Serializable;
+
 /**
  * B+树主类（管理索引）
  */
-public class BPTree<K extends Comparable<K>, V> {
+public class BPTree<K extends Comparable<K>, V> implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
     public static final int ORDER = 4;  // B+树的阶（每个节点最多 ORDER 个键）
     private BPNode<K, V> root;       // 根节点
 

@@ -10,7 +10,7 @@ import storage.service.StorageService;
 
 public class CreatTableTest {
     public static void main(String[] args) {
-        StorageService storageService = new StorageService("test-create-table.db");
+        StorageService storageService = new StorageService("test-create-table.db", "test-create-table.idx");
         StorageEngineImpl engine = new StorageEngineImpl(storageService);
         // 构造表结构
         List<ColumnDefinition> columns = List.of(

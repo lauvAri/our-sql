@@ -17,4 +17,7 @@ public record ColumnDefinition(
     public boolean isEmpty() {
         return length == 0;
     }
+    public boolean isPrimaryKey() {
+        return primaryKey;
+    }
 }

@@ -64,6 +64,7 @@ public record TableSchema(
     public static class Builder {
         private String tableName;
         private final List<ColumnDefinition> columns = new ArrayList<>();
+        private List<String> primaryKeys = new ArrayList<>();
 
         public Builder tableName(String tableName) {
             this.tableName = tableName;
@@ -81,6 +82,16 @@ public record TableSchema(
 
         public TableSchema build() {
             return new TableSchema(tableName, List.copyOf(columns));  // 确保不可变
+        }
+
+        public Builder columns(List<ColumnDefinition> columns) {
+            this.columns.addAll(columns);
+            return this;
+        }
+
+        public Builder primaryKeys(List<String> primaryKeys) {
+            this.primaryKeys = primaryKeys;
+            return this;
         }
     }
 }

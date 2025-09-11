@@ -28,11 +28,19 @@ public class BasicExecutionEngine {
                 .map(col -> new ColumnDefinition(
                         col.getName(),
                         convertType(col.getType()),
-                        col.getLength()
+                        col.getLength(),
+                        col.isPrimaryKey()
                 ))
                 .collect(Collectors.toList());
 
-        TableSchema schema = new TableSchema(plan.getTableName(), columns);
+        validatePrimaryKey(columns);
+
+        TableSchema schema = new TableSchema.Builder()
+                .tableName(plan.getTableName())
+                .columns(columns)
+                .primaryKeys(getPrimaryKeys(columns))  // 设置主键列名集合
+                .build();
+
         storage.createTable(schema);
         return 1; // 返回影响的行数
     }
@@ -46,6 +54,34 @@ public class BasicExecutionEngine {
             case "FLOAT" -> ColumnType.FLOAT;
             default -> throw new ExecutionException("Unsupported type: " + logicalType);
         };
+    }
+
+    private static void validatePrimaryKey(List<ColumnDefinition> columns) {
+        long pkCount = columns.stream().filter(ColumnDefinition::isPrimaryKey).count();
+
+        if (pkCount == 0) {
+            throw new ExecutionException("Table must have at least one primary key");
+        }
+
+        // 可选：检查主键类型是否合法（如BLOB类型不能作为主键）
+//        columns.stream()
+//                .filter(ColumnDefinition::isPrimaryKey)
+//                .forEach(col -> {
+//                    if (col.type() == DataType.BLOB) {
+//                        throw new ExecutionException(
+//                                "BLOB type cannot be primary key: " + col.getName());
+//                    }
+//                });
+    }
+
+    /**
+     * 提取主键列名集合
+     */
+    private static List<String> getPrimaryKeys(List<ColumnDefinition> columns) {
+        return columns.stream()
+                .filter(ColumnDefinition::isPrimaryKey)
+                .map(ColumnDefinition::name)
+                .collect(Collectors.toList());
     }
 
     //插入

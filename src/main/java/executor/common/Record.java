@@ -33,4 +33,15 @@ public record Record(Map<String, Object> fields) {
         }
         return (String) value;
     }
+
+    public String getPrimaryKey() {
+        /*
+        todo 目前主键是写死的 看一看能不能变成活的
+        */
+        Object id = fields.get("id");  // 假设主键字段名为"id"
+        if (id == null) {
+            throw new IllegalStateException("记录缺少主键字段(id)");
+        }
+        return id.toString();  // 确保返回String类型
+    }
 }

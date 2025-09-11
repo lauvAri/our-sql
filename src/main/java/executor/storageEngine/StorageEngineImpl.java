@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import common.BPTree.BPTree;
 import common.serialize.SerializeUtil;
 
 /**
@@ -59,7 +60,8 @@ public class StorageEngineImpl implements StorageEngine {
             // 3. 写入页面
             storageService.writePage(pageId, pageData);
             // 4. 可以将表名和pageId映射关系记录到系统表或内存
-            storageService.getTableIndex().insert(schema.tableName(), pageId);
+            BPTree<String, Integer> tableIndex = storageService.getTableIndex();
+            tableIndex.insert(schema.tableName(), pageId);
 
             storageService.flushAllPages();
         } catch (IOException e) {

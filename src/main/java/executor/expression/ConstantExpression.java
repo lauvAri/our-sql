@@ -2,6 +2,9 @@ package executor.expression;
 
 import executor.common.Record;
 
+/**
+ * 常量表达式
+ */
 public class ConstantExpression implements Expression {
     private final Object value;
 

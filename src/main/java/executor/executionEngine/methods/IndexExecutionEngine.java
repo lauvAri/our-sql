@@ -7,6 +7,9 @@ import executor.common.Table;
 import executor.common.TableSchema;
 import executor.storageEngine.StorageEngine;
 
+/**
+ * 执行引擎索引部分
+ */
 public class IndexExecutionEngine {
     public static int executeCreateIndex(StorageEngine storage, CreateIndexPlan plan) {
         Table table = storage.openTable(plan.getTableName());

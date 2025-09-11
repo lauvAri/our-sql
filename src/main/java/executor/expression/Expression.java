@@ -2,6 +2,9 @@ package executor.expression;
 
 import executor.common.Record;
 
+/**
+ * 表达式
+ */
 public interface Expression {
     /**
      * 评估表达式并返回结果

@@ -1,5 +1,8 @@
 package executor.common;
 
+/**
+ * 执行异常
+ */
 public class ExecutionException extends RuntimeException {
     public ExecutionException(String message) {
         super(message);

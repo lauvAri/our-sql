@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * WHERE过滤器
+ */
 public class EvaluateFilter {
     //WHERE过滤
     public boolean evaluateFilter(Expression filter, Record record) {

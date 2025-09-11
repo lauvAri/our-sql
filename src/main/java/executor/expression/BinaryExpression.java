@@ -4,6 +4,9 @@ import executor.common.Record;
 
 import java.util.Objects;
 
+/**
+ * 二元表达式
+ */
 public class BinaryExpression implements Expression {
     public enum Operator {
         EQ("="), NEQ("<>"), GT(">"), LT("<"),

@@ -19,13 +19,15 @@ public class CreatTableTest {
         StorageEngineImpl engine = new StorageEngineImpl(storageService);
         // 构造表结构
         List<ColumnDefinition> columns = List.of(
-            new ColumnDefinition("id", ColumnType.INT, 4, true,true),
+            new ColumnDefinition("id", ColumnType.INT, 4, true),
             new ColumnDefinition("name", ColumnType.VARCHAR, 25, true)
         );
         TableSchema schema = new TableSchema("user", columns);
 
         // 调用 createTable
         engine.createTable(schema);
+        TableSchema tableSchema = engine.openTableSchema(schema.tableName());
+        
 
         System.out.println("createTable 测试完成");
     }

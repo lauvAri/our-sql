@@ -48,6 +48,27 @@ public class StorageEngineImpl implements StorageEngine {
         }
     }
 
+    public TableSchema openTableSchema(String tableName) {
+        try {
+            // 1. 通过B+树索引查找表名对应的pageId
+            Integer pageId = storageService.getTableIndex().search(tableName);
+            if (pageId == null) {
+                return null; // 未找到表
+            }
+            // 2. 读取页面并反序列化表结构
+            Page page = storageService.readPage(pageId);
+            if (page == null) {
+                return null;
+            }
+            byte[] data = page.getData();
+            TableSchema schema = SerializeUtil.deserializeTableSchema(data);
+            return schema;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     @Override
     public void createTable(TableSchema schema) {
         try {

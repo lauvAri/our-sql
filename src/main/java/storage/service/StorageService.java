@@ -20,6 +20,8 @@ public class StorageService {
     private final Logger logger = LoggerFactory.getLogger(StorageService.class);
     private static final String prePathDB = StorageConfig.prePathDB;
     private static final String prePathIdx = StorageConfig.prePathIdx;
+    private static final String prePathData = StorageConfig.prePathData;
+    private static final String prePathSchema = StorageConfig.prePathSchema;
 
     private String dbFileName;
     private String idxFileName;

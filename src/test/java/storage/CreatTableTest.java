@@ -14,7 +14,7 @@ public class CreatTableTest {
         StorageEngineImpl engine = new StorageEngineImpl(storageService);
         // 构造表结构
         List<ColumnDefinition> columns = List.of(
-            new ColumnDefinition("id", ColumnType.INT, 4),
+            new ColumnDefinition("id", ColumnType.INT, 4,true),
             new ColumnDefinition("name", ColumnType.VARCHAR, 25)
         );
         TableSchema schema = new TableSchema("user", columns);

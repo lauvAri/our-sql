@@ -7,6 +7,7 @@ import executor.common.ColumnType;
  * @param name
  * @param type
  * @param length
+ * @param isPrimaryKey
  */
 public record ColumnDefinition(
         String name,
@@ -14,10 +15,15 @@ public record ColumnDefinition(
         int length,
         boolean isPrimaryKey
 ) {
+    public ColumnDefinition(String name,ColumnType type,int length){
+        this(name,type,length,false);
+    }
+
     public boolean isEmpty() {
         return length == 0;
     }
+
     public boolean isPrimaryKey() {
-        return primaryKey;
+        return isPrimaryKey;
     }
 }

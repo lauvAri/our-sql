@@ -1,5 +1,7 @@
 package common.BPTree;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,7 +10,9 @@ import java.util.List;
  * @param <K> 键类型（如 String 表名）
  * @param <V> 值类型（如 Integer 页号）
  */
-public abstract class BPNode<K extends Comparable<K>, V> {
+public abstract class BPNode<K extends Comparable<K>, V> implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 2L;
     protected List<K> keys;          // 节点的键（有序）
     protected boolean isLeaf;        // 是否是叶子节点
 

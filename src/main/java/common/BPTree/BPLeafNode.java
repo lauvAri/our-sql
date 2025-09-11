@@ -1,12 +1,13 @@
 package common.BPTree;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * B+树的叶子节点（存储实际数据）
  */
-public class BPLeafNode<K extends Comparable<K>, V> extends BPNode<K, V> {
+public class BPLeafNode<K extends Comparable<K>, V> extends BPNode<K, V>{
     List<V> values;          // 存储值（与 keys 一一对应）
     BPLeafNode<K, V> next; // 指向下一个叶子节点（链表结构）
 

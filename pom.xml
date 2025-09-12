@@ -56,7 +56,19 @@
                     <execution>
                         <id>demo</id>
                         <configuration>
-                            <mainClass>semantic.SQLCompilerInterfaceDemo</mainClass>
+                            <mainClass>parser.semantic.SQLCompilerInterfaceDemo</mainClass>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>token-debug</id>
+                        <configuration>
+                            <mainClass>parser.TokenDebugger</mainClass>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>sql-debug</id>
+                        <configuration>
+                            <mainClass>parser.SQLCompilerDebugger</mainClass>
                         </configuration>
                     </execution>
                 </executions>

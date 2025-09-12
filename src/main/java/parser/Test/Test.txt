@@ -1,3 +1,10 @@
 (1)
 SELECT id, name FROM users WHERE age > 18;
-CREATE TABLE student (id INT, name VARCHAR, age INT);
+
+CREATE TABLE S (
+    Sno VARCHAR(10) PRIMARY KEY,
+    Sname VARCHAR(20) NOT NULL,
+    Ssex CHAR(2) CHECK (Ssex IN ('男', '女')),
+    Sage INT,
+    sdept VARCHAR(30)
+);

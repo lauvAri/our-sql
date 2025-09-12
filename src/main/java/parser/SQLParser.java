@@ -37,6 +37,8 @@ public class SQLParser {
     private static final String COL_DEF_LIST_TAIL = "ColDefListTail";
     private static final String COL_DEF = "ColDef";
     private static final String DATA_TYPE = "DataType";
+    private static final String COLUMN_CONSTRAINTS = "ColumnConstraints";
+    private static final String COLUMN_CONSTRAINT = "ColumnConstraint";
     private static final String COL_LIST = "ColList";
     private static final String COL_LIST_TAIL = "ColListTail";
     private static final String VAL_LIST = "ValList";
@@ -257,6 +259,14 @@ public class SQLParser {
                         matched = true;
                         matchedValue = "BOOLEAN";
                         astStack.push("BOOLEAN");
+                    } else if (top.equals("PRIMARY") && currentToken.getValue().equalsIgnoreCase("PRIMARY")) {
+                        matched = true;
+                        matchedValue = "PRIMARY";
+                        astStack.push("PRIMARY");
+                    } else if (top.equals("KEY") && currentToken.getValue().equalsIgnoreCase("KEY")) {
+                        matched = true;
+                        matchedValue = "KEY";
+                        astStack.push("KEY");
                     } else if (top.equals("TRUE") && currentToken.getValue().equalsIgnoreCase("TRUE")) {
                         matched = true;
                         matchedValue = "TRUE";
@@ -393,9 +403,28 @@ public class SQLParser {
 
                 case COL_DEF:
                     // 列定义，创建ColumnDefinition对象
-                    if (production.equals("ID DataType")) {
+                    if (production.equals("ID DataType ColumnConstraints")) {
                         astStack.push("COL_DEF_START");
                     }
+                    break;
+
+                case DATA_TYPE:
+                    // 数据类型，标记开始
+                    astStack.push("DATA_TYPE_START");
+                    break;
+
+                case COLUMN_CONSTRAINTS:
+                    // 列约束，标记开始
+                    if (!production.equals("ε")) {
+                        astStack.push("CONSTRAINTS_START");
+                    } else {
+                        astStack.push(null); // 没有约束
+                    }
+                    break;
+
+                case COLUMN_CONSTRAINT:
+                    // 单个列约束，标记开始
+                    astStack.push("CONSTRAINT_START");
                     break;
 
                 case SELLIST:
@@ -468,10 +497,6 @@ public class SQLParser {
                     // 值，不需要特殊处理（已在终结符匹配时处理）
                     break;
 
-                case DATA_TYPE:
-                    // 数据类型，不需要特殊处理（已在终结符匹配时处理）
-                    break;
-
                 case LOGICAL_EXPRESSION:
                 case LOGICAL_EXPRESSION_TAIL:
                 case LOGICAL_TERM:
@@ -528,6 +553,8 @@ public class SQLParser {
                 symbol.equals("FLOAT") ||
                 symbol.equals("DOUBLE") ||
                 symbol.equals("BOOLEAN") ||
+                symbol.equals("PRIMARY") ||
+                symbol.equals("KEY") ||
                 symbol.equals("TRUE") ||
                 symbol.equals("FALSE") ||
                 symbol.equals("*") ||
@@ -654,19 +681,35 @@ public class SQLParser {
 
             case COL_DEF:
                 if (tokenType.equals("IDENTIFIER")) {
-                    return "ID DataType";
+                    return "ID DataType ColumnConstraints";
                 }
                 break;
 
             case DATA_TYPE:
                 if (tokenType.equals("KEYWORD")) {
                     if (tokenValue.equalsIgnoreCase("INT")) return "INT";
-                    if (tokenValue.equalsIgnoreCase("VARCHAR")) return "VARCHAR";
-                    if (tokenValue.equalsIgnoreCase("CHAR")) return "CHAR";
+                    if (tokenValue.equalsIgnoreCase("VARCHAR")) return "VARCHAR ( CONSTANT )";
+                    if (tokenValue.equalsIgnoreCase("CHAR")) return "CHAR ( CONSTANT )";
                     if (tokenValue.equalsIgnoreCase("DATE")) return "DATE";
                     if (tokenValue.equalsIgnoreCase("FLOAT")) return "FLOAT";
                     if (tokenValue.equalsIgnoreCase("DOUBLE")) return "DOUBLE";
                     if (tokenValue.equalsIgnoreCase("BOOLEAN")) return "BOOLEAN";
+                }
+                break;
+
+            case COLUMN_CONSTRAINTS:
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("PRIMARY")) {
+                    return "ColumnConstraint ColumnConstraints";
+                } else if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("NOT")) {
+                    return "ColumnConstraint ColumnConstraints";
+                } else {
+                    return "ε"; // 空产生式 - 没有约束
+                }
+
+            case COLUMN_CONSTRAINT:
+                if (tokenType.equals("KEYWORD")) {
+                    if (tokenValue.equalsIgnoreCase("PRIMARY")) return "PRIMARY KEY";
+                    if (tokenValue.equalsIgnoreCase("NOT")) return "NOT NULL";
                 }
                 break;
 
@@ -874,15 +917,58 @@ public class SQLParser {
                         }
                     }
                     
-                    // 对于CREATE TABLE语句，元素顺序为：表名, 列名1, 数据类型1, 列名2, 数据类型2, ...
+                    // 对于CREATE TABLE语句，解析列定义
                     if (!cleanedElements.isEmpty()) {
                         tableName = (String) cleanedElements.get(0);
                         
-                        // 剩余元素是成对的列名和数据类型
-                        for (int i = 1; i < cleanedElements.size(); i += 2) {
-                            if (i + 1 < cleanedElements.size()) {
-                                columnNames.add((String) cleanedElements.get(i));
-                                dataTypes.add((String) cleanedElements.get(i + 1));
+                        // 解析列定义：列名 数据类型 [约束]
+                        // 对于VARCHAR(50)这样的类型，需要组合多个元素
+                        List<String> currentColumnElements = new ArrayList<>();
+                        String currentColumnName = null;
+                        
+                        for (int i = 1; i < cleanedElements.size(); i++) {
+                            String element = (String) cleanedElements.get(i);
+                            
+                            // 如果是潜在的列名（通常是标识符）
+                            if (currentColumnName == null && isIdentifier(element)) {
+                                currentColumnName = element;
+                                currentColumnElements.clear();
+                            }
+                            // 如果是数据类型关键字
+                            else if (isDataTypeKeyword(element)) {
+                                currentColumnElements.add(element);
+                                
+                                // 检查是否需要长度参数
+                                if (element.equalsIgnoreCase("VARCHAR") || element.equalsIgnoreCase("CHAR")) {
+                                    // 跳过括号和长度，直接组合
+                                    if (i + 2 < cleanedElements.size() && 
+                                        isNumeric((String) cleanedElements.get(i + 2))) {
+                                        String length = (String) cleanedElements.get(i + 2);
+                                        currentColumnElements.add("(" + length + ")");
+                                        i += 3; // 跳过 '(', length, ')'
+                                    }
+                                }
+                                
+                                // 完成当前列定义
+                                if (currentColumnName != null) {
+                                    columnNames.add(currentColumnName);
+                                    dataTypes.add(String.join("", currentColumnElements));
+                                    currentColumnName = null;
+                                    currentColumnElements.clear();
+                                }
+                            }
+                            // 如果是其他数据类型（不需要长度参数）
+                            else if (element.equalsIgnoreCase("INT") || 
+                                    element.equalsIgnoreCase("FLOAT") || 
+                                    element.equalsIgnoreCase("DOUBLE") ||
+                                    element.equalsIgnoreCase("BOOLEAN") ||
+                                    element.equalsIgnoreCase("DATE")) {
+                                if (currentColumnName != null) {
+                                    columnNames.add(currentColumnName);
+                                    dataTypes.add(element);
+                                    currentColumnName = null;
+                                    currentColumnElements.clear();
+                                }
                             }
                         }
                     }
@@ -981,5 +1067,59 @@ public class SQLParser {
     // 获取分析输出
     public String getOutput() {
         return output.toString();
+    }
+    
+    // 辅助方法：检查是否为标识符
+    private boolean isIdentifier(String str) {
+        if (str == null || str.isEmpty()) {
+            return false;
+        }
+        
+        // 简单的标识符检查：以字母或下划线开头，后跟字母、数字或下划线
+        char first = str.charAt(0);
+        if (!Character.isLetter(first) && first != '_') {
+            return false;
+        }
+        
+        for (int i = 1; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (!Character.isLetterOrDigit(c) && c != '_') {
+                return false;
+            }
+        }
+        
+        // 不应该是关键字
+        return !isDataTypeKeyword(str);
+    }
+    
+    // 辅助方法：检查是否为数据类型关键字
+    private boolean isDataTypeKeyword(String str) {
+        if (str == null) {
+            return false;
+        }
+        String upper = str.toUpperCase();
+        return upper.equals("INT") || upper.equals("INTEGER") ||
+               upper.equals("VARCHAR") || upper.equals("CHAR") ||
+               upper.equals("FLOAT") || upper.equals("DOUBLE") ||
+               upper.equals("BOOLEAN") || upper.equals("DATE") ||
+               upper.equals("DATETIME") || upper.equals("TEXT");
+    }
+    
+    // 辅助方法：检查是否为数字
+    private boolean isNumeric(String str) {
+        if (str == null || str.isEmpty()) {
+            return false;
+        }
+        try {
+            Integer.parseInt(str);
+            return true;
+        } catch (NumberFormatException e) {
+            try {
+                Double.parseDouble(str);
+                return true;
+            } catch (NumberFormatException e2) {
+                return false;
+            }
+        }
     }
 }

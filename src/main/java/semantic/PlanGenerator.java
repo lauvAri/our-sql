@@ -9,12 +9,13 @@ import java.util.*;
 /**
  * 执行计划生成器
  * 将AST转换为逻辑执行计划
+ * 使用CatalogInterface与executor模块集成
  */
 public class PlanGenerator {
-    private Catalog catalog;
+    private CatalogInterface catalog;
     private List<SemanticError> errors;
     
-    public PlanGenerator(Catalog catalog) {
+    public PlanGenerator(CatalogInterface catalog) {
         this.catalog = catalog;
         this.errors = new ArrayList<>();
     }
@@ -77,7 +78,7 @@ public class PlanGenerator {
             return null;
         }
         
-        TableSchema table = catalog.getTable(tableName);
+        TableMetadata table = catalog.getTable(tableName);
         
         // 检查列是否存在
         for (String column : columns) {
@@ -153,7 +154,7 @@ public class PlanGenerator {
             return null;
         }
         
-        TableSchema table = catalog.getTable(tableName);
+        TableMetadata table = catalog.getTable(tableName);
         
         // 检查列是否存在
         for (String column : columns) {
@@ -176,8 +177,8 @@ public class PlanGenerator {
             Object value = values.get(i);
             
             if (table.hasColumn(columnName)) {
-                ColumnSchema columnSchema = table.getColumn(columnName);
-                String expectedType = columnSchema.getDataType();
+                ColumnMetadata columnMetadata = table.getColumn(columnName);
+                String expectedType = columnMetadata.getDataType();
                 String actualType = getValueType(value);
                 
                 // 改进类型兼容性检查
@@ -210,7 +211,7 @@ public class PlanGenerator {
             return null;
         }
         
-        TableSchema table = catalog.getTable(tableName);
+        TableMetadata table = catalog.getTable(tableName);
         
         // 处理WHERE子句
         Expression filter = null;
@@ -249,7 +250,7 @@ public class PlanGenerator {
             return null;
         }
         
-        TableSchema table = catalog.getTable(tableName);
+        TableMetadata table = catalog.getTable(tableName);
         
         // 检查列是否存在
         for (String column : columns) {
@@ -286,7 +287,7 @@ public class PlanGenerator {
     /**
      * 构建表达式
      */
-    private Expression buildExpression(Object expr, TableSchema table) {
+    private Expression buildExpression(Object expr, TableMetadata table) {
         if (expr == null) {
             return null;
         }
@@ -331,7 +332,7 @@ public class PlanGenerator {
     /**
      * 构建操作数表达式
      */
-    private Expression buildOperand(Object operand, TableSchema table) {
+    private Expression buildOperand(Object operand, TableMetadata table) {
         if (operand instanceof String) {
             String operandStr = (String) operand;
             

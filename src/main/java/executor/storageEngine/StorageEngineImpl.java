@@ -2,6 +2,7 @@ package executor.storageEngine;
 
 import executor.common.Table;
 import executor.common.TableSchema;
+import executor.common.impl.InMemoryTable;
 import storage.page.Page;
 import storage.service.StorageService;
 
@@ -38,9 +39,9 @@ public class StorageEngineImpl implements StorageEngine {
             }
             byte[] data = page.getData();
             TableSchema schema = SerializeUtil.deserializeTableSchema(data);
-            // 3. 返回Table对象（此处可根据你的Table实现调整）
-            // return new Table(schema, ...);
-            return null; // 暂时返回null，实际应返回Table实例
+            
+            // 3. 返回Table对象 - 使用InMemoryTable实现
+            return new InMemoryTable(schema);
         } catch (Exception e) {
             e.printStackTrace();
             return null;

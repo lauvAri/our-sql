@@ -7,13 +7,14 @@ import java.util.*;
 /**
  * 增强的语义分析器
  * 结合语义分析和执行计划生成
+ * 使用CatalogInterface与executor模块集成
  */
 public class EnhancedSemanticAnalyzer {
-    private Catalog catalog;
+    private CatalogInterface catalog;
     private SemanticAnalyzer semanticAnalyzer;
     private PlanGenerator planGenerator;
     
-    public EnhancedSemanticAnalyzer(Catalog catalog) {
+    public EnhancedSemanticAnalyzer(CatalogInterface catalog) {
         this.catalog = catalog;
         this.semanticAnalyzer = new SemanticAnalyzer(catalog);
         this.planGenerator = new PlanGenerator(catalog);
@@ -50,9 +51,9 @@ public class EnhancedSemanticAnalyzer {
     }
     
     /**
-     * 获取数据库目录
+     * 获取数据库目录接口
      */
-    public Catalog getCatalog() {
+    public CatalogInterface getCatalog() {
         return catalog;
     }
     

@@ -6,14 +6,15 @@ import java.util.*;
 /**
  * 语义分析器
  * 负责检查语义正确性并生成四元式中间代码
+ * 使用CatalogInterface与executor模块的目录系统集成
  */
 public class SemanticAnalyzer {
-    private Catalog catalog;  // 数据库目录
+    private CatalogInterface catalog;  // 数据库目录接口
     private List<Quadruple> quadruples;  // 四元式序列
     private int tempVarCounter;  // 临时变量计数器
     private List<String> errors;  // 错误列表
     
-    public SemanticAnalyzer(Catalog catalog) {
+    public SemanticAnalyzer(CatalogInterface catalog) {
         this.catalog = catalog;
         this.quadruples = new ArrayList<>();
         this.tempVarCounter = 1;
@@ -72,7 +73,7 @@ public class SemanticAnalyzer {
                 return;
             }
             
-            TableSchema table = catalog.getTable(tableName);
+            TableMetadata table = catalog.getTable(tableName);
             
             // 检查选择的列
             List<String> selectedColumns = new ArrayList<>();
@@ -134,7 +135,7 @@ public class SemanticAnalyzer {
             
             // 检查列定义的有效性
             Set<String> columnNames = new HashSet<>();
-            List<ColumnSchema> columnSchemas = new ArrayList<>();
+            List<ColumnMetadata> columnMetadataList = new ArrayList<>();
             boolean hasDefinitionErrors = false;
             
             for (Object colDefObj : columns) {
@@ -150,30 +151,29 @@ public class SemanticAnalyzer {
                 }
                 
                 // 检查数据类型有效性
-                if (!isValidDataType(dataType)) {
+                if (!catalog.isValidDataType(dataType)) {
                     addError("无效的数据类型: " + dataType);
                     hasDefinitionErrors = true;
                 }
                 
-                columnSchemas.add(new ColumnSchema(name, dataType, true));
+                columnMetadataList.add(new ColumnMetadata(name, dataType, true));
             }
             
             // 如果没有错误，生成创建表的四元式
             if (!hasDefinitionErrors) {
                 // 创建表结构
                 StringBuilder columnsStr = new StringBuilder();
-                for (int i = 0; i < columnSchemas.size(); i++) {
-                    ColumnSchema col = columnSchemas.get(i);
+                for (int i = 0; i < columnMetadataList.size(); i++) {
+                    ColumnMetadata col = columnMetadataList.get(i);
                     columnsStr.append(col.getColumnName()).append(":").append(col.getDataType());
-                    if (i < columnSchemas.size() - 1) {
+                    if (i < columnMetadataList.size() - 1) {
                         columnsStr.append(",");
                     }
                 }
                 addQuadruple("CREATE_TABLE", tableName, columnsStr.toString(), null);
                 
-                // 将表添加到目录中
-                TableSchema newTable = new TableSchema(tableName, columnSchemas);
-                catalog.addTable(tableName, newTable);
+                // 注意：在适配器模式下，我们不直接添加到catalog
+                // 这将由executor模块处理
             }
         } catch (Exception e) {
             addError("CREATE TABLE语句分析错误: " + e.getMessage());
@@ -195,7 +195,7 @@ public class SemanticAnalyzer {
                 return;
             }
             
-            TableSchema table = catalog.getTable(tableName);
+            TableMetadata table = catalog.getTable(tableName);
             
             // 检查列数和值数是否匹配
             if (columns.size() != values.size()) {
@@ -217,7 +217,7 @@ public class SemanticAnalyzer {
                 }
                 
                 // 类型检查
-                ColumnSchema column = table.getColumn(columnName);
+                ColumnMetadata column = table.getColumn(columnName);
                 if (!isTypeCompatible(value, column.getDataType())) {
                     addError("列 '" + columnName + "' 的值类型不匹配，期望 " + 
                             column.getDataType() + "，实际 " + getValueType(value));
@@ -253,7 +253,7 @@ public class SemanticAnalyzer {
                 return;
             }
             
-            TableSchema table = catalog.getTable(tableName);
+            TableMetadata table = catalog.getTable(tableName);
             
             // 分析WHERE条件
             String whereResult = null;
@@ -271,7 +271,7 @@ public class SemanticAnalyzer {
     /**
      * 分析表达式并生成四元式
      */
-    private String analyzeExpression(Object expr, TableSchema table) {
+    private String analyzeExpression(Object expr, TableMetadata table) {
         if (expr == null) return null;
         
         try {
@@ -306,7 +306,7 @@ public class SemanticAnalyzer {
     /**
      * 分析操作数
      */
-    private String analyzeOperand(Object operand, TableSchema table) {
+    private String analyzeOperand(Object operand, TableMetadata table) {
         if (operand instanceof String) {
             String str = (String) operand;
             // 检查是否为列名
@@ -323,7 +323,7 @@ public class SemanticAnalyzer {
     /**
      * 检查类型兼容性
      */
-    private boolean areTypesCompatible(Object left, Object right, TableSchema table) {
+    private boolean areTypesCompatible(Object left, Object right, TableMetadata table) {
         String leftType = getOperandType(left, table);
         String rightType = getOperandType(right, table);
         
@@ -339,7 +339,7 @@ public class SemanticAnalyzer {
     /**
      * 获取操作数的类型
      */
-    private String getOperandType(Object operand, TableSchema table) {
+    private String getOperandType(Object operand, TableMetadata table) {
         if (operand instanceof String) {
             String str = (String) operand;
             if (table.hasColumn(str)) {
@@ -394,14 +394,6 @@ public class SemanticAnalyzer {
      */
     private boolean isNumericType(String type) {
         return type.equals("INT") || type.equals("FLOAT") || type.equals("DOUBLE");
-    }
-    
-    /**
-     * 检查数据类型是否有效
-     */
-    private boolean isValidDataType(String dataType) {
-        return Arrays.asList("INT", "VARCHAR", "CHAR", "DATE", "FLOAT", "DOUBLE", "BOOLEAN")
-                .contains(dataType.toUpperCase());
     }
     
     /**

@@ -12,7 +12,7 @@ import java.util.Objects;
  */
 public final class CatalogRecord {
     // 字段名常量
-    public static final String TABLE_NAME = "table_name";
+    public static final String TABLE_NAME = "id";  // 改为id作为主键
     public static final String SCHEMA_JSON = "schema_json";
     public static final String CREATED_AT = "created_at";
 
@@ -40,7 +40,7 @@ public final class CatalogRecord {
         Map<String, Object> fields = new HashMap<>(3);
         fields.put(TABLE_NAME, tableName);
         fields.put(SCHEMA_JSON, schemaJson);
-        fields.put(CREATED_AT, createdAt);
+        fields.put(CREATED_AT, (int)(createdAt / 1000));  // 转换为int类型的秒时间戳
         return fields;
     }
 

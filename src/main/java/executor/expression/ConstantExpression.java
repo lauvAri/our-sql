@@ -20,5 +20,13 @@ public class ConstantExpression implements Expression {
     public Object getValue() {
         return value;
     }
+    
+    @Override
+    public String toString() {
+        if (value instanceof String) {
+            return "'" + value + "'";
+        }
+        return String.valueOf(value);
+    }
 }
 

@@ -1,6 +1,7 @@
 package executor.common;
 
 import executor.common.ColumnType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * 列定义
@@ -19,6 +20,7 @@ public record ColumnDefinition(
         this(name,type,length,false);
     }
 
+    @JsonIgnore
     public boolean isEmpty() {
         return length == 0;
     }

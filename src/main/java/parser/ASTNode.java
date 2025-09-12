@@ -1,10 +1,9 @@
 package parser;
-
 import java.util.ArrayList;
 import java.util.List;
 
 // AST节点基类
-abstract class ASTNode {
+public abstract class ASTNode {
     protected String type;
 
     public String getType() {
@@ -32,21 +31,19 @@ class SelectNode extends ASTNode {
     }
 }
 
-// UPDATE语句节点
-class UpdateNode extends ASTNode {
+// CREATE TABLE语句节点
+class CreateTableNode extends ASTNode {
     public String tableName;
-    public List<SetClause> setClauses;
-    public ExpressionNode whereClause;
+    public List<ColumnDefinition> columns;
 
-    public UpdateNode() {
-        this.type = "UPDATE";
-        this.setClauses = new ArrayList<>();
+    public CreateTableNode() {
+        this.type = "CREATE_TABLE";
+        this.columns = new ArrayList<>();
     }
 
     @Override
     public String toString() {
-        return String.format("UPDATE %s SET %s WHERE %s",
-                tableName, setClauses, whereClause != null ? whereClause.toString() : "NULL");
+        return String.format("CREATE TABLE %s (%s)", tableName, columns);
     }
 }
 
@@ -55,7 +52,6 @@ class InsertNode extends ASTNode {
     public String tableName;
     public List<String> columns;
     public List<Object> values;
-
 
     public InsertNode() {
         this.type = "INSERT";
@@ -85,40 +81,6 @@ class DeleteNode extends ASTNode {
                 tableName, whereClause != null ? whereClause.toString() : "NULL");
     }
 }
-
-// CREATE TABLE语句节点
-class CreateTableNode extends ASTNode {
-    public String tableName;
-    public List<ColumnDefinition> columns;
-
-    public CreateTableNode() {
-        this.type = "CREATE_TABLE";
-        this.columns = new ArrayList<>();
-    }
-
-    @Override
-    public String toString() {
-        return String.format("CREATE TABLE %s (%s)", tableName, columns);
-    }
-}
-
-// SET子句（用于UPDATE语句）
-class SetClause {
-    public String column;
-    public Object value;
-
-    public SetClause(String column, Object value) {
-        this.column = column;
-        this.value = value;
-    }
-
-    @Override
-    public String toString() {
-        return column + " = " + value;
-    }
-}
-
-
 
 // 列定义
 class ColumnDefinition {

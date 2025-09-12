@@ -15,8 +15,9 @@ public class SystemCatalog {
 
     // 系统表结构定义
     public static final TableSchema CATALOG_SCHEMA = new TableSchema.Builder()
-            .addColumn("table_name", ColumnType.VARCHAR, 256,true)  // 主键
+            .tableName(CATALOG_TABLE_NAME)  // 设置表名
+            .addColumn("id", ColumnType.VARCHAR, 256,true)  // 主键改为id
             .addColumn("schema_json", ColumnType.VARCHAR, 256)      // 表结构的JSON表示
-            .addColumn("created_at", ColumnType.TIMESTAMP, 256)
+            .addColumn("created_at", ColumnType.INT, 256)           // 改为INT类型存储时间戳
             .build();
 }

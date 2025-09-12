@@ -42,4 +42,37 @@
         </dependency>
 
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>parser.Main</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>demo</id>
+                        <configuration>
+                            <mainClass>parser.semantic.SQLCompilerInterfaceDemo</mainClass>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>token-debug</id>
+                        <configuration>
+                            <mainClass>parser.TokenDebugger</mainClass>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>sql-debug</id>
+                        <configuration>
+                            <mainClass>parser.SQLCompilerDebugger</mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

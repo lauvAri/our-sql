@@ -102,7 +102,7 @@ public class BasicExecutionEngine {
             table.insert(new Record(fieldMap));
             count++;
         }
-
+        storage.saveTable(plan.getTableName(), table);
         return count;
     }
 
@@ -233,6 +233,7 @@ public class BasicExecutionEngine {
             }
             return false;
         });
+        storage.saveTable(plan.getTableName(), table);
         return count.get();
     }
 

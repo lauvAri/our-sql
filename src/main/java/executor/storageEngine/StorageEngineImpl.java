@@ -68,6 +68,11 @@ public class StorageEngineImpl implements StorageEngine {
     }
 
     @Override
+    public void saveTable(String tableName, Table table) {
+        
+    }
+
+    @Override
     public void dropTable(String tableName) {
 
     }

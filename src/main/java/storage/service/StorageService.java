@@ -1,11 +1,13 @@
 package storage.service;
 
+import executor.common.Record;
 import storage.buffer.BufferPoolManager;
 import storage.buffer.DiskManager;
 import storage.page.Page;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import common.StorageConfig;
 import common.BPTree.BPTree;
 import common.BPTree.utils.BPTreePersistUtil;
+import storage.page.RecordPageManager;
 
 public class StorageService {
     private DiskManager diskManager;
@@ -80,6 +83,44 @@ public class StorageService {
         bufferPoolManager.unpinPage(pageId, true);
         return true;
     }
+
+    // ... existing code ...
+    public void insertRecord(String tableName, Record record) {
+        try {
+            // 1. 通过B+树索引查找表名对应的pageId
+            Integer pageId = tableIndex.search(tableName);
+            if (pageId == null) {
+                logger.error("Table {} not found", tableName);
+                return;
+            }
+
+            // 2. 读取页面
+            Page page = bufferPoolManager.fetchPage(pageId);
+            if (page == null) {
+                logger.error("Failed to fetch page for table {}", tableName);
+                return;
+            }
+
+            // 3. 使用RecordPageManager在页面中插入记录
+            boolean success = RecordPageManager.insertRecord(page, record);
+
+            if (!success) {
+                logger.error("Failed to insert record into table {} page {}", tableName, pageId);
+                bufferPoolManager.unpinPage(pageId, false);
+                return;
+            }
+
+            // 4. 释放页面资源（RecordPageManager已经标记页面为脏页）
+            bufferPoolManager.unpinPage(pageId, true);
+
+            logger.info("Record successfully inserted into table {} page {}", tableName, pageId);
+        } catch (Exception e) {
+            logger.error("Error inserting record into table {}", tableName, e);
+        }
+    }
+// ... existing code ...
+
+
 
     public int allocatePage() throws IOException {
         return bufferPoolManager.newPage().getPageId();

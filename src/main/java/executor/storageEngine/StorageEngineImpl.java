@@ -40,9 +40,9 @@ public class StorageEngineImpl implements StorageEngine {
             }
             byte[] data = page.getData();
             TableSchema schema = SerializeUtil.deserializeTableSchema(data);
-            
             // 3. 返回Table对象 - 使用InMemoryTable实现
             return new InMemoryTable(schema);
+
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -98,7 +98,18 @@ public class StorageEngineImpl implements StorageEngine {
 
     @Override
     public void dropTable(String tableName) {
-
+        try {
+            // 从索引中删除表
+            BPTree<String, Integer> tableIndex = storageService.getTableIndex();
+            Integer pageId = tableIndex.search(tableName);
+            if (pageId != null) {
+                tableIndex.delete(tableName);
+                // 注意：实际实现中还需要回收页面资源
+                storageService.flushAllPages();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

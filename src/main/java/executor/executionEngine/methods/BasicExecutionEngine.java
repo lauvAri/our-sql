@@ -33,7 +33,7 @@ public class BasicExecutionEngine {
                 ))
                 .collect(Collectors.toList());
 
-        validatePrimaryKey(columns);
+//        validatePrimaryKey(columns);
 
         TableSchema schema = new TableSchema.Builder()
                 .tableName(plan.getTableName())

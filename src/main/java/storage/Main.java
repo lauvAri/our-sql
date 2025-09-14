@@ -1,4 +1,5 @@
 package storage;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import storage.buffer.BufferPoolManager;
@@ -7,14 +8,46 @@ import storage.page.Page;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
     private static final String DB_FILE = "test_database.db";
 
+    static class Test {
+      int age;
+      String name;
+      String sex;
+
+     public String getName() {
+      return name;
+     }
+
+     public void setName(String name) {
+      this.name = name;
+     }
+
+     public int getAge() {
+      return age;
+     }
+
+     public void setAge(int age) {
+      this.age = age;
+     }
+
+     public String getSex() {
+      return sex;
+     }
+
+     public void setSex(String sex) {
+      this.sex = sex;
+     }
+    }
+
     public static void main(String[] args) throws IOException {
         // 清理旧的数据库文件
        new File(DB_FILE).delete();
+     ObjectMapper objectMapper = new ObjectMapper();
 
         logger.info("---------- 1. Initializing Storage System ----------");
         DiskManager diskManager = new DiskManager(DB_FILE);
@@ -23,8 +56,22 @@ public class Main {
 
         logger.info("\n---------- 2. Testing Page Allocation and Writing ----------");
         Page page0 = bufferPoolManager.newPage();
-        page0.writeString(0, "Hello Page 0 你好，页面0");
+        page0.writeString(0, "Hello Page 0");
         logger.info("Created page 0 and wrote content.");
+        page0.writeString(page0.getStartIndex(), "good morning this is the worst thing ever 这是第二段");
+        page0.writeString(page0.getStartIndex(), "good morning");
+        page0.writeString(page0.getStartIndex(), "good morning");
+        Test test = new Test();
+        test.age = 18;
+        test.sex = "男";
+        test.name = "Peter Smith";
+        String str = objectMapper.writeValueAsString(test);
+        page0.writeString(page0.getStartIndex(), str);
+     List<Integer> indexList = page0.getStartIndexList();
+     for (int i : indexList) {
+      System.out.println(page0.readString(i));
+     }
+
 
         Page page1 = bufferPoolManager.newPage();
         page1.writeString(100, "Data for Page 1");

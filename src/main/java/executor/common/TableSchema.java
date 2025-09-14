@@ -1,10 +1,12 @@
 package executor.common;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import executor.common.ColumnDefinition;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +19,7 @@ import java.util.Map;
 public record TableSchema(
         String tableName,
         List<ColumnDefinition> columns
-) {
+) implements Serializable {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     @Override
     public List<ColumnDefinition> columns() {

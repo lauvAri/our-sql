@@ -161,8 +161,13 @@ public class BasicExecutionEngine {
 
                     results.add(projectColumns(record, plan.getColumns()));
                 }
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+                throw new RuntimeException(e);
             }
         }
+
+        System.out.println(results);
 
         //limit函数
         if(plan.getLimit() >= 0){
@@ -175,6 +180,8 @@ public class BasicExecutionEngine {
             OrderByExecutor orderByExecutor = new OrderByExecutor();
             results = orderByExecutor.sort(results, plan.getOrderBy());
         }
+
+        System.out.println(results.toString());
 
         return results;
     }

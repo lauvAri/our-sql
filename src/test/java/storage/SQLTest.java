@@ -54,11 +54,11 @@ public class SQLTest {
         // 创建SQL编译器
         SQLCompiler compiler = new SQLCompiler(catalogAdapter);
 
-        String createSQL = "CREATE TABLE student(id INT, name VARCHAR(50), age INT);";
-        System.out.println("1. 正在创建表: " + createSQL);
-
-        CreateTablePlan createPlan = compiler.compileCreateTable(createSQL);
-        executionEngine.execute(createPlan);
+//        String createSQL = "CREATE TABLE student(id INT, name VARCHAR(50), age INT);";
+//        System.out.println("1. 正在创建表: " + createSQL);
+//
+//        CreateTablePlan createPlan = compiler.compileCreateTable(createSQL);
+//        executionEngine.execute(createPlan);
 
 //        // 第2步：手动注册表到系统目录（为了演示）
 //        executor.common.TableSchema.Builder builder = new executor.common.TableSchema.Builder().tableName("student");

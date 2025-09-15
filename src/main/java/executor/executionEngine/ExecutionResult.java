@@ -35,4 +35,13 @@ public class ExecutionResult {
     public Object getData() {
         return data;
     }
+
+    @Override
+    public String toString() {
+        return "ExecutionResult{" +
+                "success=" + success +
+                ", message='" + message + '\'' +
+                ", data=" + data +
+                '}';
+    }
 }

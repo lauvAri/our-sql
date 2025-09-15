@@ -101,7 +101,7 @@ public class SQLTest {
         executionEngine.execute(deletePlan);
 
         // 第3步：查询表
-        String selectSQL = "SELECT id, name FROM student WHERE age > 18;";
+        String selectSQL = "SELECT id, name FROM student WHERE age > 18 AND id = 2;";
         System.out.println("\n2. 正在查询表: " + selectSQL);
 
         SelectPlan selectPlan = compiler.compileSelect(selectSQL);

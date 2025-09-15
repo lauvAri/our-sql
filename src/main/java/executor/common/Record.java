@@ -1,5 +1,8 @@
 package executor.common;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Map;
 
 /**
@@ -34,6 +37,7 @@ public record Record(Map<String, Object> fields) {
         return (String) value;
     }
 
+    @JsonIgnore
     public String getPrimaryKey() {
         /*
         todo 目前主键是写死的 看一看能不能变成活的

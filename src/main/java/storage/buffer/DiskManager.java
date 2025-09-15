@@ -53,4 +53,16 @@ public class DiskManager {
     public void close() throws IOException {
         dbFile.close();
     }
+
+    public boolean isEmpty() throws IOException {
+        return dbFile.length() == 0;
+    }
+
+    /**
+     * 获取当前页数
+     * @return 当前页数
+     */
+    public int getPageCount() {
+        return pageCounter.get();
+    }
 }

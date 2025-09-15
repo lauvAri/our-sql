@@ -162,7 +162,7 @@ public class StoreManager {
         }
     }
 
-    private void loadAllTables() {
+    public void loadAllTables() {
         Table table = loadTable(SystemCatalog.CATALOG_TABLE_NAME);
 //        if (table != null) {
 //            List<Record> records = table.getAllRecords();
@@ -181,7 +181,8 @@ public class StoreManager {
             records.parallelStream().forEach(record -> {
                 if (record.getValue("id") != null &&  !record.getJsonString("id").equals(SystemCatalog.CATALOG_TABLE_NAME)){
                     TableSchema schema = TableSchema.fromJson(record.getJsonString("schema_json"));
-                    tables.put(record.getJsonString("id"), new InMemoryTable(schema));
+
+                    tables.put(record.getJsonString("id"), loadTable(record.getJsonString("id")));
                     schemas.put(record.getJsonString("id"), schema);
                 }
             });

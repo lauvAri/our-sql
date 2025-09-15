@@ -1,4 +1,4 @@
-package executor.executionEngine.methods;
+package executor.executionEngine.engineMethods;
 
 import common.plan.CreateTablePlan;
 import common.plan.DeletePlan;
@@ -6,6 +6,9 @@ import common.plan.InsertPlan;
 import common.plan.SelectPlan;
 import executor.common.*;
 import executor.common.Record;
+import executor.common.orderby.OrderByClause;
+import executor.executionEngine.func.LimitExecutor;
+import executor.executionEngine.func.OrderByExecutor;
 import executor.expression.*;
 import executor.storageEngine.StorageEngine;
 
@@ -159,6 +162,18 @@ public class BasicExecutionEngine {
                     results.add(projectColumns(record, plan.getColumns()));
                 }
             }
+        }
+
+        //limit函数
+        if(plan.getLimit() >= 0){
+            LimitExecutor limitExecutor = new LimitExecutor();
+            results = limitExecutor.limit(results, plan.getLimit());
+        }
+
+        //OrderBy函数
+        if(plan.getOrderBy() != null){
+            OrderByExecutor orderByExecutor = new OrderByExecutor();
+            results = orderByExecutor.sort(results, plan.getOrderBy());
         }
 
         return results;

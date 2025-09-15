@@ -7,6 +7,7 @@ import common.plan.InsertPlan;
 import common.plan.SelectPlan;
 import executor.common.Table;
 import executor.common.TableSchema;
+import executor.common.orderby.OrderByClause;
 import executor.executionEngine.ExecutionEngine;
 import executor.executionEngine.ExecutionResult;
 import executor.storageEngine.StorageEngine;
@@ -101,10 +102,12 @@ public class SQLTest {
         executionEngine.execute(deletePlan);
 
         // 第3步：查询表
-        String selectSQL = "SELECT id, name FROM student WHERE age > 18 AND id = 2;";
+        String selectSQL = "SELECT id, name FROM student WHERE age > 18;";
         System.out.println("\n2. 正在查询表: " + selectSQL);
 
         SelectPlan selectPlan = compiler.compileSelect(selectSQL);
+        //selectPlan.setLimit(1); //设置limit
+        selectPlan.setOrderBy(new OrderByClause().addItem("id",false));
         System.out.println("   ✅ 编译成功 - 查询表: " + selectPlan.getTableName());
         System.out.println("   - 选择列: " + selectPlan.getColumns());
         System.out.println("   - 过滤条件: " + selectPlan.getFilter());

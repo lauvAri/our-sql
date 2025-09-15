@@ -46,38 +46,105 @@
             <version>3.25.1</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>1.36</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>1.36</version>
+        </dependency>
+
+
     </dependencies>
 
     <build>
         <plugins>
+<!--            <plugin>-->
+<!--                <groupId>org.codehaus.mojo</groupId>-->
+<!--                <artifactId>exec-maven-plugin</artifactId>-->
+<!--                <version>3.1.0</version>-->
+<!--                <configuration>-->
+<!--                    <mainClass>parser.Main</mainClass>-->
+<!--                </configuration>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <id>demo</id>-->
+<!--                        <configuration>-->
+<!--                            <mainClass>parser.semantic.SQLCompilerInterfaceDemo</mainClass>-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+<!--                    <execution>-->
+<!--                        <id>token-debug</id>-->
+<!--                        <configuration>-->
+<!--                            <mainClass>parser.TokenDebugger</mainClass>-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+<!--                    <execution>-->
+<!--                        <id>sql-debug</id>-->
+<!--                        <configuration>-->
+<!--                            <mainClass>parser.SQLCompilerDebugger</mainClass>-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
+
+            <!-- 1. 打包包含所有依赖的 fat jar -->
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>3.1.0</version>
-                <configuration>
-                    <mainClass>parser.Main</mainClass>
-                </configuration>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.0</version>
                 <executions>
                     <execution>
-                        <id>demo</id>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
                         <configuration>
-                            <mainClass>parser.semantic.SQLCompilerInterfaceDemo</mainClass>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>token-debug</id>
-                        <configuration>
-                            <mainClass>parser.TokenDebugger</mainClass>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>sql-debug</id>
-                        <configuration>
-                            <mainClass>parser.SQLCompilerDebugger</mainClass>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>cli.Main</mainClass>
+                                </transformer>
+                            </transformers>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+
+<!--            &lt;!&ndash; 2. 使用 launch4j 构建 exe &ndash;&gt;-->
+<!--            <plugin>-->
+<!--                <groupId>com.akathist.maven.plugins.launch4j</groupId>-->
+<!--                <artifactId>launch4j-maven-plugin</artifactId>-->
+<!--                <version>2.1.2</version>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <id>l4j-cli</id>-->
+<!--                        <phase>package</phase>-->
+<!--                        <goals><goal>launch4j</goal></goals>-->
+<!--                        <configuration>-->
+<!--                            <headerType>console</headerType>-->
+<!--                            <outfile>${project.build.directory}/our-sql.exe</outfile>-->
+<!--                            <jar>${project.build.directory}/${project.build.finalName}.jar</jar>-->
+<!--                            <jre>-->
+<!--                                <path>runtime</path> &lt;!&ndash; 可选：打包 JRE &ndash;&gt;-->
+<!--                                <minVersion>17.0.0</minVersion>-->
+<!--                            </jre>-->
+<!--                            <versionInfo>-->
+<!--                                <fileDescription>OurSQL Database Engine</fileDescription>-->
+<!--                                <productName>OurSQL</productName>-->
+<!--                                <copyright>© 2025 CSU</copyright>-->
+
+<!--                                <productVersion>1.0.0.0</productVersion>-->
+<!--                                <fileVersion>1.0.0.0</fileVersion>-->
+<!--                                <txtFileVersion>1.0.0.0</txtFileVersion>-->
+
+<!--                                <internalName>our-sql</internalName>-->
+<!--                                <originalFilename>our-sql.exe</originalFilename>-->
+<!--                            </versionInfo>-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
         </plugins>
     </build>
 </project>

@@ -23,16 +23,23 @@ public class EvaluateFilter {
             BinaryExpression expr = (BinaryExpression) filter;
             Object left = evaluateExpression(expr.getLeft(), record);
             Object right = evaluateExpression(expr.getRight(), record);
+            if (left == null || right == null) {
+                throw new ExecutionException("Cannot compare null values");
+            }
+
+            // 统一转为 String 再比较
+            String leftStr = left.toString();
+            String rightStr = right.toString();
 
             return switch (expr.getOperator()) {
-                case EQ -> Objects.equals(left, right);
-                case NEQ -> !Objects.equals(left, right);
-                case GT -> compare(left, right) > 0;
-                case LT -> compare(left, right) < 0;
-                case GTE -> compare(left, right) >= 0;
-                case LTE -> compare(left, right) <= 0;
-                case AND -> toBoolean(left) && toBoolean(right);
-                case OR -> toBoolean(left) || toBoolean(right);
+                case EQ -> Objects.equals(leftStr, rightStr);
+                case NEQ -> !Objects.equals(leftStr, rightStr);
+                case GT -> compare(leftStr, rightStr) > 0;
+                case LT -> compare(leftStr, rightStr) < 0;
+                case GTE -> compare(leftStr, rightStr) >= 0;
+                case LTE -> compare(leftStr, rightStr) <= 0;
+                case AND -> toBoolean(leftStr) && toBoolean(rightStr);
+                case OR -> toBoolean(leftStr) || toBoolean(rightStr);
                 default -> throw new ExecutionException("Unsupported operator: " + expr.getOperator());
             };
         }
@@ -79,7 +86,9 @@ public class EvaluateFilter {
             return evaluateUnaryExpression((UnaryExpression) expr, record);
         } else if (expr instanceof FunctionExpression) {
             return evaluateFunctionExpression((FunctionExpression) expr, record);
-        } else {
+        } else if (expr instanceof ColumnReference) {  // 新增处理 ColumnReference
+            return record.getValue(((ColumnReference) expr).getColumnName());
+        }else {
             throw new ExecutionException("Unsupported expression type: " + expr.getClass());
         }
     }

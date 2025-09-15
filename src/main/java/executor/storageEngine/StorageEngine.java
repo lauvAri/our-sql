@@ -17,6 +17,7 @@ public interface StorageEngine {
     Table openTable(String tableName);
     void createTable(TableSchema schema);
     void dropTable(String tableName);
+    void saveTable(String tableName, Table table);
     void createIndex(String tableName, String indexName, List<String> columns, boolean unique);
     void dropIndex(String tableName, String indexName);
 

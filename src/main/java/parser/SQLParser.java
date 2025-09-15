@@ -1,52 +1,7 @@
 package parser;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
-
-/*
-Prog → Stmt ;
-Stmt → SelectStmt | InsertStmt | UpdateStmt | DeleteStmt | CreateStmt
-
-SelectStmt → SELECT SelList FROM Tbl WhereClause
-SelList → ID SelListTail
-SelListTail → , ID SelListTail | ε
-Tbl → ID
-
-InsertStmt → INSERT INTO Tbl ( ColumnList ) VALUES ( ValueList )
-ColumnList → ID ColumnListTail
-ColumnListTail → , ID ColumnListTail | ε
-ValueList → Expr ValueListTail
-ValueListTail → , Expr ValueListTail | ε
-
-UpdateStmt → UPDATE Tbl SET SetList WhereClause
-SetList → SetClause SetListTail
-SetListTail → , SetClause SetListTail | ε
-SetClause → ID = Expr
-
-DeleteStmt → DELETE FROM Tbl WhereClause
-
-CreateStmt → CREATE TABLE Tbl ( ColumnDefList )
-ColumnDefList → ColumnDef ColumnDefListTail
-ColumnDefListTail → , ColumnDef ColumnDefListTail | ε
-ColumnDef → ID DataType
-
-WhereClause → WHERE Condition | ε
-Condition → Expr
-Expr → SimpleExpr CompExprTail
-CompExprTail → CompOp SimpleExpr | ε
-SimpleExpr → Term SimpleExprTail
-SimpleExprTail → AddOp Term SimpleExprTail | ε
-Term → Factor TermTail
-TermTail → MulOp Factor TermTail | ε
-Factor → ID | CONSTANT | ( Expr )
-
-CompOp → = | > | < | >= | <= | <>
-AddOp → + | -
-MulOp → * | /
-
-DataType → INT | VARCHAR | CHAR | DATE
-*/
 
 public class SQLParser {
     private List<Token> tokens;
@@ -55,40 +10,39 @@ public class SQLParser {
     private StringBuilder output;
     private int step;
 
+    // AST构建相关的变量
+    private ASTNode ast;
+    private Stack<Object> astStack; // 用于构建AST的栈
+
     // 非终结符
     private static final String PROG = "Prog";
     private static final String STMT = "Stmt";
-    private static final String SELECT_STMT = "SelectStmt";
-    private static final String INSERT_STMT = "InsertStmt";
-    private static final String UPDATE_STMT = "UpdateStmt";
-    private static final String DELETE_STMT = "DeleteStmt";
-    private static final String CREATE_STMT = "CreateStmt";
+    private static final String QUERY = "Query";
+    private static final String CREATE_TABLE = "CreateTable";
+    private static final String INSERT = "Insert";
+    private static final String DELETE = "Delete";
     private static final String SELLIST = "SelList";
     private static final String SELLIST_TAIL = "SelListTail";
     private static final String TBL = "Tbl";
     private static final String WHERE_CLAUSE = "WhereClause";
+    private static final String LOGICAL_EXPRESSION = "LogicalExpression";
+    private static final String LOGICAL_EXPRESSION_TAIL = "LogicalExpressionTail";
+    private static final String LOGICAL_TERM = "LogicalTerm";
+    private static final String LOGICAL_TERM_TAIL = "LogicalTermTail";
+    private static final String LOGICAL_FACTOR = "LogicalFactor";
     private static final String CONDITION = "Condition";
-    private static final String EXPR = "Expr";
-    private static final String COMP_EXPR_TAIL = "CompExprTail";
-    private static final String SIMPLE_EXPR = "SimpleExpr";
-    private static final String SIMPLE_EXPR_TAIL = "SimpleExprTail";
-    private static final String TERM = "Term";
-    private static final String TERM_TAIL = "TermTail";
-    private static final String FACTOR = "Factor";
-    private static final String COMP_OP = "CompOp";
-    private static final String ADD_OP = "AddOp";
-    private static final String MUL_OP = "MulOp";
-    private static final String SET_LIST = "SetList";
-    private static final String SET_LIST_TAIL = "SetListTail";
-    private static final String SET_CLAUSE = "SetClause";
-    private static final String COLUMN_LIST = "ColumnList";
-    private static final String COLUMN_LIST_TAIL = "ColumnListTail";
-    private static final String VALUE_LIST = "ValueList";
-    private static final String VALUE_LIST_TAIL = "ValueListTail";
-    private static final String COLUMN_DEF_LIST = "ColumnDefList";
-    private static final String COLUMN_DEF_LIST_TAIL = "ColumnDefListTail";
-    private static final String COLUMN_DEF = "ColumnDef";
+    private static final String VALUE = "Value";
+    private static final String OPERATOR = "Operator";
+    private static final String COL_DEF_LIST = "ColDefList";
+    private static final String COL_DEF_LIST_TAIL = "ColDefListTail";
+    private static final String COL_DEF = "ColDef";
     private static final String DATA_TYPE = "DataType";
+    private static final String COLUMN_CONSTRAINTS = "ColumnConstraints";
+    private static final String COLUMN_CONSTRAINT = "ColumnConstraint";
+    private static final String COL_LIST = "ColList";
+    private static final String COL_LIST_TAIL = "ColListTail";
+    private static final String VAL_LIST = "ValList";
+    private static final String VAL_LIST_TAIL = "ValListTail";
 
     public SQLParser(List<Token> tokens) {
         // 过滤掉注释Token
@@ -103,6 +57,7 @@ public class SQLParser {
         this.parseStack = new Stack<>();
         this.output = new StringBuilder();
         this.step = 1;
+        this.astStack = new Stack<>();
 
         // 初始化分析栈
         parseStack.push("$"); // 结束符号
@@ -185,104 +140,169 @@ public class SQLParser {
                     boolean matched = false;
                     String matchedValue = "";
 
-                    // 关键字匹配
                     if (top.equals("SELECT") && currentToken.getValue().equalsIgnoreCase("SELECT")) {
                         matched = true;
                         matchedValue = "SELECT";
-                    } else if (top.equals("FROM") && currentToken.getValue().equalsIgnoreCase("FROM")) {
+                        // 开始构建SELECT节点
+                        astStack.push(new SelectNode());
+                    } else if (top.equals("CREATE") && currentToken.getValue().equalsIgnoreCase("CREATE")) {
                         matched = true;
-                        matchedValue = "FROM";
-                    } else if (top.equals("WHERE") && currentToken.getValue().equalsIgnoreCase("WHERE")) {
+                        matchedValue = "CREATE";
+                        // 开始构建CREATE TABLE节点
+                        astStack.push(new CreateTableNode());
+                    } else if (top.equals("TABLE") && currentToken.getValue().equalsIgnoreCase("TABLE")) {
                         matched = true;
-                        matchedValue = "WHERE";
-                    } else if (top.equals("DELETE") && currentToken.getValue().equalsIgnoreCase("DELETE")) {
-                        matched = true;
-                        matchedValue = "DELETE";
-                    } else if (top.equals("UPDATE") && currentToken.getValue().equalsIgnoreCase("UPDATE")) {
-                        matched = true;
-                        matchedValue = "UPDATE";
-                    } else if (top.equals("SET") && currentToken.getValue().equalsIgnoreCase("SET")) {
-                        matched = true;
-                        matchedValue = "SET";
+                        matchedValue = "TABLE";
                     } else if (top.equals("INSERT") && currentToken.getValue().equalsIgnoreCase("INSERT")) {
                         matched = true;
                         matchedValue = "INSERT";
+                        // 开始构建INSERT节点
+                        astStack.push(new InsertNode());
                     } else if (top.equals("INTO") && currentToken.getValue().equalsIgnoreCase("INTO")) {
                         matched = true;
                         matchedValue = "INTO";
                     } else if (top.equals("VALUES") && currentToken.getValue().equalsIgnoreCase("VALUES")) {
                         matched = true;
                         matchedValue = "VALUES";
-                    } else if (top.equals("CREATE") && currentToken.getValue().equalsIgnoreCase("CREATE")) {
+                    } else if (top.equals("DELETE") && currentToken.getValue().equalsIgnoreCase("DELETE")) {
                         matched = true;
-                        matchedValue = "CREATE";
-                    } else if (top.equals("TABLE") && currentToken.getValue().equalsIgnoreCase("TABLE")) {
+                        matchedValue = "DELETE";
+                        // 开始构建DELETE节点
+                        astStack.push(new DeleteNode());
+                    } else if (top.equals("FROM") && currentToken.getValue().equalsIgnoreCase("FROM")) {
                         matched = true;
-                        matchedValue = "TABLE";
-                    } else if (top.equals("INT") && currentToken.getValue().equalsIgnoreCase("INT")) {
+                        matchedValue = "FROM";
+                    } else if (top.equals("WHERE") && currentToken.getValue().equalsIgnoreCase("WHERE")) {
                         matched = true;
-                        matchedValue = "INT";
-                    } else if (top.equals("VARCHAR") && currentToken.getValue().equalsIgnoreCase("VARCHAR")) {
-                        matched = true;
-                        matchedValue = "VARCHAR";
-                    } else if (top.equals("CHAR") && currentToken.getValue().equalsIgnoreCase("CHAR")) {
-                        matched = true;
-                        matchedValue = "CHAR";
-                    } else if (top.equals("DATE") && currentToken.getValue().equalsIgnoreCase("DATE")) {
-                        matched = true;
-                        matchedValue = "DATE";
-                    }
-                    // 标识符和常量匹配
-                    else if (top.equals("ID") && currentToken.getType() == Token.TokenType.IDENTIFIER) {
+                        matchedValue = "WHERE";
+                    } else if (top.equals("ID") && currentToken.getType() == Token.TokenType.IDENTIFIER) {
                         matched = true;
                         matchedValue = "ID:" + currentToken.getValue();
+                        // 将标识符压入AST栈
+                        astStack.push(currentToken.getValue());
                     } else if (top.equals("CONSTANT") && currentToken.getType() == Token.TokenType.CONSTANT) {
                         matched = true;
                         matchedValue = "CONSTANT:" + currentToken.getValue();
-                    }
-                    // 运算符和分隔符匹配
-                    else if (top.equals(";") && currentToken.getValue().equals(";")) {
+                        // 将常量压入AST栈
+                        astStack.push(currentToken.getValue());
+                    } else if (top.equals(";") && currentToken.getValue().equals(";")) {
                         matched = true;
                         matchedValue = ";";
+                        // 语句结束，构建最终的AST节点
+                        buildFinalAST();
                     } else if (top.equals(",") && currentToken.getValue().equals(",")) {
                         matched = true;
                         matchedValue = ",";
-                    } else if (top.equals("=") && currentToken.getValue().equals("=")) {
-                        matched = true;
-                        matchedValue = "=";
-                    } else if (top.equals(">") && currentToken.getValue().equals(">")) {
-                        matched = true;
-                        matchedValue = ">";
-                    } else if (top.equals("<") && currentToken.getValue().equals("<")) {
-                        matched = true;
-                        matchedValue = "<";
-                    } else if (top.equals(">=") && currentToken.getValue().equals(">=")) {
-                        matched = true;
-                        matchedValue = ">=";
-                    } else if (top.equals("<=") && currentToken.getValue().equals("<=")) {
-                        matched = true;
-                        matchedValue = "<=";
-                    } else if (top.equals("<>") && currentToken.getValue().equals("<>")) {
-                        matched = true;
-                        matchedValue = "<>";
-                    } else if (top.equals("+") && currentToken.getValue().equals("+")) {
-                        matched = true;
-                        matchedValue = "+";
-                    } else if (top.equals("-") && currentToken.getValue().equals("-")) {
-                        matched = true;
-                        matchedValue = "-";
-                    } else if (top.equals("*") && currentToken.getValue().equals("*")) {
-                        matched = true;
-                        matchedValue = "*";
-                    } else if (top.equals("/") && currentToken.getValue().equals("/")) {
-                        matched = true;
-                        matchedValue = "/";
                     } else if (top.equals("(") && currentToken.getValue().equals("(")) {
                         matched = true;
                         matchedValue = "(";
                     } else if (top.equals(")") && currentToken.getValue().equals(")")) {
                         matched = true;
                         matchedValue = ")";
+                    } else if (top.equals("=") && currentToken.getValue().equals("=")) {
+                        matched = true;
+                        matchedValue = "=";
+                        astStack.push("=");
+                        // 如果条件的三个部分都收集完了，构建ExpressionNode
+                        buildConditionIfComplete();
+                    } else if (top.equals(">") && currentToken.getValue().equals(">")) {
+                        matched = true;
+                        matchedValue = ">";
+                        astStack.push(">");
+                        // 如果条件的三个部分都收集完了，构建ExpressionNode
+                        buildConditionIfComplete();
+                    } else if (top.equals("<") && currentToken.getValue().equals("<")) {
+                        matched = true;
+                        matchedValue = "<";
+                        astStack.push("<");
+                        buildConditionIfComplete();
+                    } else if (top.equals(">=") && currentToken.getValue().equals(">=")) {
+                        matched = true;
+                        matchedValue = ">=";
+                        astStack.push(">=");
+                        buildConditionIfComplete();
+                    } else if (top.equals("<=") && currentToken.getValue().equals("<=")) {
+                        matched = true;
+                        matchedValue = "<=";
+                        astStack.push("<=");
+                        buildConditionIfComplete();
+                    } else if (top.equals("<>") && currentToken.getValue().equals("<>")) {
+                        matched = true;
+                        matchedValue = "<>";
+                        astStack.push("<>");
+                        buildConditionIfComplete();
+                    } else if (top.equals("INT") && currentToken.getValue().equalsIgnoreCase("INT")) {
+                        matched = true;
+                        matchedValue = "INT";
+                        astStack.push("INT");
+                    } else if (top.equals("VARCHAR") && currentToken.getValue().equalsIgnoreCase("VARCHAR")) {
+                        matched = true;
+                        matchedValue = "VARCHAR";
+                        astStack.push("VARCHAR");
+                    } else if (top.equals("CHAR") && currentToken.getValue().equalsIgnoreCase("CHAR")) {
+                        matched = true;
+                        matchedValue = "CHAR";
+                        astStack.push("CHAR");
+                    } else if (top.equals("DATE") && currentToken.getValue().equalsIgnoreCase("DATE")) {
+                        matched = true;
+                        matchedValue = "DATE";
+                        astStack.push("DATE");
+                    } else if (top.equals("FLOAT") && currentToken.getValue().equalsIgnoreCase("FLOAT")) {
+                        matched = true;
+                        matchedValue = "FLOAT";
+                        astStack.push("FLOAT");
+                    } else if (top.equals("DOUBLE") && currentToken.getValue().equalsIgnoreCase("DOUBLE")) {
+                        matched = true;
+                        matchedValue = "DOUBLE";
+                        astStack.push("DOUBLE");
+                    } else if (top.equals("BOOLEAN") && currentToken.getValue().equalsIgnoreCase("BOOLEAN")) {
+                        matched = true;
+                        matchedValue = "BOOLEAN";
+                        astStack.push("BOOLEAN");
+                    } else if (top.equals("PRIMARY") && currentToken.getValue().equalsIgnoreCase("PRIMARY")) {
+                        matched = true;
+                        matchedValue = "PRIMARY";
+                        astStack.push("PRIMARY");
+                    } else if (top.equals("KEY") && currentToken.getValue().equalsIgnoreCase("KEY")) {
+                        matched = true;
+                        matchedValue = "KEY";
+                        astStack.push("KEY");
+                    } else if (top.equals("TRUE") && currentToken.getValue().equalsIgnoreCase("TRUE")) {
+                        matched = true;
+                        matchedValue = "TRUE";
+                        astStack.push("TRUE");
+                    } else if (top.equals("FALSE") && currentToken.getValue().equalsIgnoreCase("FALSE")) {
+                        matched = true;
+                        matchedValue = "FALSE";
+                        astStack.push("FALSE");
+                    } else if (top.equals("AND") && currentToken.getValue().equalsIgnoreCase("AND")) {
+                        matched = true;
+                        matchedValue = "AND";
+                        astStack.push("AND");
+                    } else if (top.equals("OR") && currentToken.getValue().equalsIgnoreCase("OR")) {
+                        matched = true;
+                        matchedValue = "OR";
+                        astStack.push("OR");
+                    } else if (top.equals("NOT") && currentToken.getValue().equalsIgnoreCase("NOT")) {
+                        matched = true;
+                        matchedValue = "NOT";
+                        astStack.push("NOT");
+                    } else if (top.equals("IN") && currentToken.getValue().equalsIgnoreCase("IN")) {
+                        matched = true;
+                        matchedValue = "IN";
+                        astStack.push("IN");
+                    } else if (top.equals("IS") && currentToken.getValue().equalsIgnoreCase("IS")) {
+                        matched = true;
+                        matchedValue = "IS";
+                        astStack.push("IS");
+                    } else if (top.equals("NULL") && currentToken.getValue().equalsIgnoreCase("NULL")) {
+                        matched = true;
+                        matchedValue = "NULL";
+                        astStack.push("NULL");
+                    } else if (top.equals("*") && currentToken.getValue().equals("*")) {
+                        matched = true;
+                        matchedValue = "*";
+                        astStack.push("*");
                     }
 
                     if (matched) {
@@ -316,6 +336,9 @@ public class SQLParser {
                         }
                     }
 
+                    // 处理AST构建
+                    handleASTConstruction(top, production);
+
                     recordStep("用(" + (step-1) + ") " + top + " → " + production);
                 } else {
                     // 错误处理
@@ -335,42 +358,206 @@ public class SQLParser {
         }
 
         // 构建AST
-        return buildAST();
+        if (!astStack.isEmpty()) {
+            Object result = astStack.pop();
+            if (result instanceof ASTNode) {
+                ast = (ASTNode) result;
+            } else {
+                return error("AST构建错误: 栈顶元素不是ASTNode");
+            }
+        }
+        return ast;
+    }
+
+    // 处理AST构建
+    private void handleASTConstruction(String nonTerminal, String production) {
+        try {
+            switch (nonTerminal) {
+                case PROG:
+                    // 程序节点，不需要特殊处理
+                    break;
+
+                case STMT:
+                    // 语句节点，不需要特殊处理
+                    break;
+
+                case QUERY:
+                    // 对于Query，我们不在这里处理，而是在所有组件准备好后处理
+                    break;
+
+                case CREATE_TABLE:
+                    // CREATE TABLE语句，不在这里处理
+                    break;
+
+                case COL_DEF_LIST:
+                    // 列定义列表
+                    if (production.equals("ColDef ColDefListTail")) {
+                        // 创建一个标记，表示开始构建列定义列表
+                        astStack.push("COL_DEF_LIST_START");
+                    }
+                    break;
+
+                case COL_DEF_LIST_TAIL:
+                    // 列定义列表尾部，不需要特殊处理
+                    break;
+
+                case COL_DEF:
+                    // 列定义，创建ColumnDefinition对象
+                    if (production.equals("ID DataType ColumnConstraints")) {
+                        astStack.push("COL_DEF_START");
+                    }
+                    break;
+
+                case DATA_TYPE:
+                    // 数据类型，标记开始
+                    astStack.push("DATA_TYPE_START");
+                    break;
+
+                case COLUMN_CONSTRAINTS:
+                    // 列约束，标记开始
+                    if (!production.equals("ε")) {
+                        astStack.push("CONSTRAINTS_START");
+                    } else {
+                        astStack.push(null); // 没有约束
+                    }
+                    break;
+
+                case COLUMN_CONSTRAINT:
+                    // 单个列约束，标记开始
+                    astStack.push("CONSTRAINT_START");
+                    break;
+
+                case SELLIST:
+                    // 选择列表
+                    if (production.equals("ID SelListTail")) {
+                        astStack.push("SEL_LIST_START");
+                    }
+                    break;
+
+                case SELLIST_TAIL:
+                    // 选择列表尾部，不需要特殊处理
+                    break;
+
+                case TBL:
+                    // 表名，不需要特殊处理
+                    break;
+
+                case WHERE_CLAUSE:
+                    // WHERE子句
+                    if (production.equals("WHERE LogicalExpression")) {
+                        // 标记WHERE子句开始
+                        astStack.push("WHERE_START");
+                    } else if (production.equals("ε")) {
+                        astStack.push(null); // 没有WHERE子句
+                    }
+                    break;
+
+                case CONDITION:
+                    // 条件表达式
+                    if (production.equals("ID Operator Value")) {
+                        astStack.push("CONDITION_START");
+                    }
+                    break;
+
+                case INSERT:
+                    // INSERT语句，不在这里处理
+                    break;
+
+                case COL_LIST:
+                    // 列列表
+                    if (production.equals("ID ColListTail")) {
+                        astStack.push("COL_LIST_START");
+                    }
+                    break;
+
+                case COL_LIST_TAIL:
+                    // 列列表尾部，不需要特殊处理
+                    break;
+
+                case VAL_LIST:
+                    // 值列表
+                    if (production.equals("Value ValListTail")) {
+                        astStack.push("VAL_LIST_START");
+                    }
+                    break;
+
+                case VAL_LIST_TAIL:
+                    // 值列表尾部，不需要特殊处理
+                    break;
+
+                case DELETE:
+                    // DELETE语句，不在这里处理
+                    break;
+
+                case OPERATOR:
+                    // 操作符，不需要特殊处理（已在终结符匹配时处理）
+                    break;
+
+                case VALUE:
+                    // 值，不需要特殊处理（已在终结符匹配时处理）
+                    break;
+
+                case LOGICAL_EXPRESSION:
+                case LOGICAL_EXPRESSION_TAIL:
+                case LOGICAL_TERM:
+                case LOGICAL_TERM_TAIL:
+                case LOGICAL_FACTOR:
+                    // 逻辑表达式相关的非终结符，暂时不做特殊处理
+                    // 在基本功能完成后再添加复杂的AST构建
+                    break;
+
+                default:
+                    // 对于未处理的非终结符，不做任何操作
+                    break;
+            }
+        } catch (Exception e) {
+            recordStep("AST构建错误: " + e.getMessage());
+            System.err.println("AST构建错误: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     // 判断是否为终结符
     private boolean isTerminal(String symbol) {
         return symbol.equals("SELECT") ||
-                symbol.equals("FROM") ||
-                symbol.equals("WHERE") ||
-                symbol.equals("DELETE") ||
-                symbol.equals("UPDATE") ||
-                symbol.equals("SET") ||
+                symbol.equals("CREATE") ||
+                symbol.equals("TABLE") ||
                 symbol.equals("INSERT") ||
                 symbol.equals("INTO") ||
                 symbol.equals("VALUES") ||
-                symbol.equals("CREATE") ||
-                symbol.equals("TABLE") ||
-                symbol.equals("INT") ||
-                symbol.equals("VARCHAR") ||
-                symbol.equals("CHAR") ||
-                symbol.equals("DATE") ||
+                symbol.equals("DELETE") ||
+                symbol.equals("FROM") ||
+                symbol.equals("WHERE") ||
+                symbol.equals("AND") ||
+                symbol.equals("OR") ||
+                symbol.equals("NOT") ||
+                symbol.equals("IN") ||
+                symbol.equals("IS") ||
+                symbol.equals("NULL") ||
                 symbol.equals("ID") ||
                 symbol.equals("CONSTANT") ||
                 symbol.equals(";") ||
                 symbol.equals(",") ||
+                symbol.equals("(") ||
+                symbol.equals(")") ||
                 symbol.equals("=") ||
                 symbol.equals(">") ||
                 symbol.equals("<") ||
                 symbol.equals(">=") ||
                 symbol.equals("<=") ||
                 symbol.equals("<>") ||
-                symbol.equals("+") ||
-                symbol.equals("-") ||
+                symbol.equals("INT") ||
+                symbol.equals("VARCHAR") ||
+                symbol.equals("CHAR") ||
+                symbol.equals("DATE") ||
+                symbol.equals("FLOAT") ||
+                symbol.equals("DOUBLE") ||
+                symbol.equals("BOOLEAN") ||
+                symbol.equals("PRIMARY") ||
+                symbol.equals("KEY") ||
+                symbol.equals("TRUE") ||
+                symbol.equals("FALSE") ||
                 symbol.equals("*") ||
-                symbol.equals("/") ||
-                symbol.equals("(") ||
-                symbol.equals(")") ||
                 symbol.equals("$");
     }
 
@@ -378,60 +565,56 @@ public class SQLParser {
     private String getProduction(String nonTerminal, String tokenType, String tokenValue) {
         switch (nonTerminal) {
             case PROG:
-                if (tokenType.equals("KEYWORD") || tokenType.equals("IDENTIFIER")) {
+                if (tokenType.equals("KEYWORD") &&
+                        (tokenValue.equalsIgnoreCase("SELECT") ||
+                                tokenValue.equalsIgnoreCase("CREATE") ||
+                                tokenValue.equalsIgnoreCase("INSERT") ||
+                                tokenValue.equalsIgnoreCase("DELETE"))) {
                     return "Stmt ;";
                 }
                 break;
 
             case STMT:
-                if (tokenType.equals("KEYWORD")) {
-                    if (tokenValue.equalsIgnoreCase("SELECT")) {
-                        return "SelectStmt";
-                    } else if (tokenValue.equalsIgnoreCase("INSERT")) {
-                        return "InsertStmt";
-                    } else if (tokenValue.equalsIgnoreCase("UPDATE")) {
-                        return "UpdateStmt";
-                    } else if (tokenValue.equalsIgnoreCase("DELETE")) {
-                        return "DeleteStmt";
-                    } else if (tokenValue.equalsIgnoreCase("CREATE")) {
-                        return "CreateStmt";
-                    }
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("SELECT")) {
+                    return "Query";
+                } else if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("CREATE")) {
+                    return "CreateTable";
+                } else if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("INSERT")) {
+                    return "Insert";
+                } else if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("DELETE")) {
+                    return "Delete";
                 }
                 break;
 
-            case SELECT_STMT:
+            case QUERY:
                 if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("SELECT")) {
                     return "SELECT SelList FROM Tbl WhereClause";
                 }
                 break;
 
-            case INSERT_STMT:
+            case CREATE_TABLE:
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("CREATE")) {
+                    return "CREATE TABLE ID ( ColDefList )";
+                }
+                break;
+
+            case INSERT:
                 if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("INSERT")) {
-                    return "INSERT INTO Tbl ( ColumnList ) VALUES ( ValueList )";
+                    return "INSERT INTO ID ( ColList ) VALUES ( ValList )";
                 }
                 break;
 
-            case UPDATE_STMT:
-                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("UPDATE")) {
-                    return "UPDATE Tbl SET SetList WhereClause";
-                }
-                break;
-
-            case DELETE_STMT:
+            case DELETE:
                 if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("DELETE")) {
                     return "DELETE FROM Tbl WhereClause";
-                }
-                break;
-
-            case CREATE_STMT:
-                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("CREATE")) {
-                    return "CREATE TABLE Tbl ( ColumnDefList )";
                 }
                 break;
 
             case SELLIST:
                 if (tokenType.equals("IDENTIFIER")) {
                     return "ID SelListTail";
+                } else if (tokenType.equals("OPERATOR") && tokenValue.equals("*")) {
+                    return "* SelListTail";
                 }
                 break;
 
@@ -439,7 +622,7 @@ public class SQLParser {
                 if (tokenType.equals("DELIMITER") && tokenValue.equals(",")) {
                     return ", ID SelListTail";
                 } else {
-                    return "ε";
+                    return "ε"; // 空产生式
                 }
 
             case TBL:
@@ -450,33 +633,18 @@ public class SQLParser {
 
             case WHERE_CLAUSE:
                 if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("WHERE")) {
-                    return "WHERE Condition";
+                    return "WHERE LogicalExpression";
                 } else {
-                    return "ε";
+                    return "ε"; // 空产生式
                 }
 
             case CONDITION:
-                if (tokenType.equals("IDENTIFIER") || tokenType.equals("CONSTANT") || tokenType.equals("DELIMITER") && tokenValue.equals("(")) {
-                    return "Expr";
+                if (tokenType.equals("IDENTIFIER")) {
+                    return "ID Operator Value";
                 }
                 break;
 
-            case EXPR:
-                if (tokenType.equals("IDENTIFIER") || tokenType.equals("CONSTANT") || tokenType.equals("DELIMITER") && tokenValue.equals("(")) {
-                    return "SimpleExpr CompExprTail";
-                }
-                break;
-
-            case COMP_EXPR_TAIL:
-                if (tokenType.equals("OPERATOR") &&
-                        (tokenValue.equals("=") || tokenValue.equals(">") || tokenValue.equals("<") ||
-                                tokenValue.equals(">=") || tokenValue.equals("<=") || tokenValue.equals("<>"))) {
-                    return "CompOp SimpleExpr";
-                } else {
-                    return "ε";
-                }
-
-            case COMP_OP:
+            case OPERATOR:
                 if (tokenType.equals("OPERATOR")) {
                     if (tokenValue.equals("=")) return "=";
                     if (tokenValue.equals(">")) return ">";
@@ -487,134 +655,125 @@ public class SQLParser {
                 }
                 break;
 
-            case SIMPLE_EXPR:
-                if (tokenType.equals("IDENTIFIER") || tokenType.equals("CONSTANT") || tokenType.equals("DELIMITER") && tokenValue.equals("(")) {
-                    return "Term SimpleExprTail";
-                }
-                break;
-
-            case SIMPLE_EXPR_TAIL:
-                if (tokenType.equals("OPERATOR") && (tokenValue.equals("+") || tokenValue.equals("-"))) {
-                    return "AddOp Term SimpleExprTail";
-                } else {
-                    return "ε";
-                }
-
-            case ADD_OP:
-                if (tokenType.equals("OPERATOR")) {
-                    if (tokenValue.equals("+")) return "+";
-                    if (tokenValue.equals("-")) return "-";
-                }
-                break;
-
-            case TERM:
-                if (tokenType.equals("IDENTIFIER") || tokenType.equals("CONSTANT") || tokenType.equals("DELIMITER") && tokenValue.equals("(")) {
-                    return "Factor TermTail";
-                }
-                break;
-
-            case TERM_TAIL:
-                if (tokenType.equals("OPERATOR") && (tokenValue.equals("*") || tokenValue.equals("/"))) {
-                    return "MulOp Factor TermTail";
-                } else {
-                    return "ε";
-                }
-
-            case MUL_OP:
-                if (tokenType.equals("OPERATOR")) {
-                    if (tokenValue.equals("*")) return "*";
-                    if (tokenValue.equals("/")) return "/";
-                }
-                break;
-
-            case FACTOR:
+            case VALUE:
                 if (tokenType.equals("IDENTIFIER")) {
                     return "ID";
                 } else if (tokenType.equals("CONSTANT")) {
                     return "CONSTANT";
-                } else if (tokenType.equals("DELIMITER") && tokenValue.equals("(")) {
-                    return "( Expr )";
+                } else if (tokenType.equals("KEYWORD") && 
+                          (tokenValue.equalsIgnoreCase("TRUE") || tokenValue.equalsIgnoreCase("FALSE"))) {
+                    return tokenValue.toUpperCase();
                 }
                 break;
 
-            case SET_LIST:
+            case COL_DEF_LIST:
                 if (tokenType.equals("IDENTIFIER")) {
-                    return "SetClause SetListTail";
+                    return "ColDef ColDefListTail";
                 }
                 break;
 
-            case SET_LIST_TAIL:
+            case COL_DEF_LIST_TAIL:
                 if (tokenType.equals("DELIMITER") && tokenValue.equals(",")) {
-                    return ", SetClause SetListTail";
+                    return ", ColDef ColDefListTail";
                 } else {
-                    return "ε";
+                    return "ε"; // 空产生式
                 }
 
-            case SET_CLAUSE:
+            case COL_DEF:
                 if (tokenType.equals("IDENTIFIER")) {
-                    return "ID = Expr";
-                }
-                break;
-
-            case COLUMN_LIST:
-                if (tokenType.equals("IDENTIFIER")) {
-                    return "ID ColumnListTail";
-                }
-                break;
-
-            case COLUMN_LIST_TAIL:
-                if (tokenType.equals("DELIMITER") && tokenValue.equals(",")) {
-                    return ", ID ColumnListTail";
-                } else if (tokenType.equals("DELIMITER") && tokenValue.equals(")")) {
-                    return "ε";
-                }
-                break;
-
-            case VALUE_LIST:
-                if (tokenType.equals("IDENTIFIER") || tokenType.equals("CONSTANT") || tokenType.equals("DELIMITER") && tokenValue.equals("(")) {
-                    return "Expr ValueListTail";
-                }
-                break;
-
-            case VALUE_LIST_TAIL:
-                if (tokenType.equals("DELIMITER") && tokenValue.equals(",")) {
-                    return ", Expr ValueListTail";
-                } else if (tokenType.equals("DELIMITER") && tokenValue.equals(")")) {
-                    return "ε";
-                }
-                break;
-
-            case COLUMN_DEF_LIST:
-                if (tokenType.equals("IDENTIFIER")) {
-                    return "ColumnDef ColumnDefListTail";
-                }
-                break;
-
-            case COLUMN_DEF_LIST_TAIL:
-                if (tokenType.equals("DELIMITER") && tokenValue.equals(",")) {
-                    return ", ColumnDef ColumnDefListTail";
-                } else if (tokenType.equals("DELIMITER") && tokenValue.equals(")")) {
-                    return "ε";
-                }
-                break;
-
-            case COLUMN_DEF:
-                if (tokenType.equals("IDENTIFIER")) {
-                    return "ID DataType";
+                    return "ID DataType ColumnConstraints";
                 }
                 break;
 
             case DATA_TYPE:
                 if (tokenType.equals("KEYWORD")) {
-                    if (tokenValue.equalsIgnoreCase("INT")) {
-                        return "INT";
-                    } else if (tokenValue.equalsIgnoreCase("VARCHAR")) {
-                        return "VARCHAR";
-                    } else if (tokenValue.equalsIgnoreCase("CHAR")) {
-                        return "CHAR";
-                    } else if (tokenValue.equalsIgnoreCase("DATE")) {
-                        return "DATE";
-                    }
+                    if (tokenValue.equalsIgnoreCase("INT")) return "INT";
+                    if (tokenValue.equalsIgnoreCase("VARCHAR")) return "VARCHAR ( CONSTANT )";
+                    if (tokenValue.equalsIgnoreCase("CHAR")) return "CHAR ( CONSTANT )";
+                    if (tokenValue.equalsIgnoreCase("DATE")) return "DATE";
+                    if (tokenValue.equalsIgnoreCase("FLOAT")) return "FLOAT";
+                    if (tokenValue.equalsIgnoreCase("DOUBLE")) return "DOUBLE";
+                    if (tokenValue.equalsIgnoreCase("BOOLEAN")) return "BOOLEAN";
+                }
+                break;
+
+            case COLUMN_CONSTRAINTS:
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("PRIMARY")) {
+                    return "ColumnConstraint ColumnConstraints";
+                } else if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("NOT")) {
+                    return "ColumnConstraint ColumnConstraints";
+                } else {
+                    return "ε"; // 空产生式 - 没有约束
+                }
+
+            case COLUMN_CONSTRAINT:
+                if (tokenType.equals("KEYWORD")) {
+                    if (tokenValue.equalsIgnoreCase("PRIMARY")) return "PRIMARY KEY";
+                    if (tokenValue.equalsIgnoreCase("NOT")) return "NOT NULL";
+                }
+                break;
+
+            case COL_LIST:
+                if (tokenType.equals("IDENTIFIER")) {
+                    return "ID ColListTail";
+                }
+                break;
+
+            case COL_LIST_TAIL:
+                if (tokenType.equals("DELIMITER") && tokenValue.equals(",")) {
+                    return ", ID ColListTail";
+                } else {
+                    return "ε"; // 空产生式
+                }
+
+            case VAL_LIST:
+                if (tokenType.equals("IDENTIFIER") || tokenType.equals("CONSTANT")) {
+                    return "Value ValListTail";
+                }
+                break;
+
+            case VAL_LIST_TAIL:
+                if (tokenType.equals("DELIMITER") && tokenValue.equals(",")) {
+                    return ", Value ValListTail";
+                } else {
+                    return "ε"; // 空产生式
+                }
+
+            case LOGICAL_EXPRESSION:
+                if (tokenType.equals("IDENTIFIER") || tokenType.equals("KEYWORD") && 
+                    (tokenValue.equalsIgnoreCase("NOT") || tokenValue.equals("("))) {
+                    return "LogicalTerm LogicalExpressionTail";
+                }
+                break;
+
+            case LOGICAL_EXPRESSION_TAIL:
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("OR")) {
+                    return "OR LogicalTerm LogicalExpressionTail";
+                } else {
+                    return "ε"; // 空产生式
+                }
+
+            case LOGICAL_TERM:
+                if (tokenType.equals("IDENTIFIER") || tokenType.equals("KEYWORD") && 
+                    (tokenValue.equalsIgnoreCase("NOT") || tokenValue.equals("("))) {
+                    return "LogicalFactor LogicalTermTail";
+                }
+                break;
+
+            case LOGICAL_TERM_TAIL:
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("AND")) {
+                    return "AND LogicalFactor LogicalTermTail";
+                } else {
+                    return "ε"; // 空产生式
+                }
+
+            case LOGICAL_FACTOR:
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("NOT")) {
+                    return "NOT LogicalFactor";
+                } else if (tokenType.equals("DELIMITER") && tokenValue.equals("(")) {
+                    return "( LogicalExpression )";
+                } else if (tokenType.equals("IDENTIFIER")) {
+                    return "Condition";
                 }
                 break;
         }
@@ -628,55 +787,339 @@ public class SQLParser {
         return null;
     }
 
-    // 构建AST
-    private ASTNode buildAST() {
-        // 这里应该根据实际分析过程构建AST
-        // 为了简化，我们根据当前Token创建一个简单的AST节点
-
-        // 在实际实现中，这些值应该从分析过程中提取
-        if (tokens.size() > 0) {
-            Token firstToken = tokens.get(0);
-            if (firstToken.getValue().equalsIgnoreCase("SELECT")) {
-                SelectNode selectNode = new SelectNode();
-                selectNode.columns.add("name");
-                selectNode.columns.add("age");
-                selectNode.tableName = "Students";
-                ExpressionNode whereClause = new ExpressionNode("age", ">", "20");
-                selectNode.whereClause = whereClause;
-                return selectNode;
-            } else if (firstToken.getValue().equalsIgnoreCase("DELETE")) {
-                DeleteNode deleteNode = new DeleteNode();
-                deleteNode.tableName = "logs";
-                ExpressionNode whereClause = new ExpressionNode("created_at", "<", "'2023-01-01'");
-                deleteNode.whereClause = whereClause;
-                return deleteNode;
-            } else if (firstToken.getValue().equalsIgnoreCase("INSERT")) {
-                InsertNode insertNode = new InsertNode();
-                insertNode.tableName = "users";
-                insertNode.columns.add("username");
-                insertNode.columns.add("email");
-                insertNode.columns.add("created_at");
-                insertNode.values.add("'test_user'");
-                insertNode.values.add("'test@example.com'");
-                insertNode.values.add("'2023-10-27 10:00:00'");
-                return insertNode;
-            } else if (firstToken.getValue().equalsIgnoreCase("UPDATE")) {
-                UpdateNode updateNode = new UpdateNode();
-                updateNode.tableName = "products";
-                SetClause setClause = new SetClause("stock", "stock - 1");
-                updateNode.setClauses.add(setClause);
-                ExpressionNode whereClause = new ExpressionNode("id", "=", "101");
-                updateNode.whereClause = whereClause;
-                return updateNode;
+    // 构建条件表达式（如果完整的话）
+    private void buildConditionIfComplete() {
+        // 检查栈顶的三个元素是否构成一个完整的条件：value, operator, column
+        if (astStack.size() >= 3) {
+            Object top1 = astStack.get(astStack.size() - 1);
+            Object top2 = astStack.get(astStack.size() - 2);
+            
+            // 检查是否是操作符
+            if (top1 instanceof String && isOperator((String) top1)) {
+                // 此时栈结构可能是：column, operator（刚加入的）
+                // 等待值被加入后再构建
+                return;
             }
-            // 可以添加其他语句类型的处理
+            
+            // 检查是否是：value, operator, column的结构
+            if (top2 instanceof String && isOperator((String) top2)) {
+                Object value = astStack.pop();
+                Object operator = astStack.pop();
+                Object column = astStack.pop();
+                
+                ExpressionNode condition = new ExpressionNode(
+                    column.toString(),
+                    operator.toString(), 
+                    value.toString()
+                );
+                astStack.push(condition);
+            }
         }
+    }
+    
+    // 辅助方法：检查是否为操作符
+    private boolean isOperator(String str) {
+        return str.equals("=") || str.equals(">") || str.equals("<") || 
+               str.equals(">=") || str.equals("<=") || str.equals("<>");
+    }
 
-        return null;
+    // 构建最终的AST
+    private void buildFinalAST() {
+        try {
+            // 语句解析完成，从AST栈构建最终的AST节点
+            if (!astStack.isEmpty()) {
+                // 首先处理条件表达式（如果存在）
+                buildConditionIfComplete();
+                
+                // 找到AST节点的起始点
+                Object rootNode = null;
+                List<Object> elements = new ArrayList<>();
+                
+                // 收集所有栈元素，寻找根节点
+                while (!astStack.isEmpty()) {
+                    Object element = astStack.pop();
+                    if (element instanceof SelectNode || element instanceof CreateTableNode || 
+                        element instanceof InsertNode || element instanceof DeleteNode) {
+                        rootNode = element;
+                        break;
+                    }
+                    elements.add(0, element); // 保持顺序
+                }
+                
+                if (rootNode instanceof SelectNode) {
+                    SelectNode selectNode = (SelectNode) rootNode;
+                    
+                    // 解析栈中的元素来构建SELECT节点
+                    List<String> columns = new ArrayList<>();
+                    String tableName = "";
+                    ExpressionNode whereClause = null;
+                    
+                    // 清理标记并提取有用信息
+                    List<Object> cleanedElements = new ArrayList<>();
+                    for (Object element : elements) {
+                        if (element instanceof String) {
+                            String str = (String) element;
+                            if (!str.contains("_START")) { // 忽略标记
+                                cleanedElements.add(str);
+                            }
+                        } else if (element instanceof ExpressionNode) {
+                            whereClause = (ExpressionNode) element;
+                        } else if (element != null) {
+                            cleanedElements.add(element);
+                        }
+                    }
+                    
+                    // 根据SQL语法，列名在前，表名在后，WHERE条件已经提取
+                    // 对于 "SELECT id, name FROM users WHERE age > 18"
+                    // cleanedElements 应该包含: ["id", "name", "users"]
+                    int i = 0;
+                    while (i < cleanedElements.size()) {
+                        Object element = cleanedElements.get(i);
+                        if (element instanceof String) {
+                            String str = (String) element;
+                            // 表名是FROM之后的第一个标识符
+                            // 我们需要一个更聪明的方法来区分列名和表名
+                            if (i == cleanedElements.size() - 1) {
+                                // 最后一个字符串应该是表名
+                                tableName = str;
+                            } else {
+                                // 其他字符串是列名
+                                columns.add(str);
+                            }
+                        }
+                        i++;
+                    }
+                    
+                    selectNode.columns = columns;
+                    selectNode.tableName = tableName;
+                    selectNode.whereClause = whereClause;
+                    
+                    astStack.push(selectNode);
+                }
+                else if (rootNode instanceof CreateTableNode) {
+                    CreateTableNode createNode = (CreateTableNode) rootNode;
+                    
+                    // 解析CREATE TABLE的元素
+                    List<String> columnNames = new ArrayList<>();
+                    List<String> dataTypes = new ArrayList<>();
+                    String tableName = "";
+                    
+                    // 清理标记并提取有用信息
+                    List<Object> cleanedElements = new ArrayList<>();
+                    for (Object element : elements) {
+                        if (element instanceof String) {
+                            String str = (String) element;
+                            if (!str.contains("_START")) { // 忽略标记
+                                cleanedElements.add(str);
+                            }
+                        } else if (element != null) {
+                            cleanedElements.add(element);
+                        }
+                    }
+                    
+                    // 对于CREATE TABLE语句，解析列定义
+                    if (!cleanedElements.isEmpty()) {
+                        tableName = (String) cleanedElements.get(0);
+                        
+                        // 解析列定义：列名 数据类型 [约束]
+                        // 对于VARCHAR(50)这样的类型，需要组合多个元素
+                        List<String> currentColumnElements = new ArrayList<>();
+                        String currentColumnName = null;
+                        
+                        for (int i = 1; i < cleanedElements.size(); i++) {
+                            String element = (String) cleanedElements.get(i);
+                            
+                            // 如果是潜在的列名（通常是标识符）
+                            if (currentColumnName == null && isIdentifier(element)) {
+                                currentColumnName = element;
+                                currentColumnElements.clear();
+                            }
+                            // 如果是数据类型关键字
+                            else if (isDataTypeKeyword(element)) {
+                                currentColumnElements.add(element);
+                                
+                                // 检查是否需要长度参数
+                                if (element.equalsIgnoreCase("VARCHAR") || element.equalsIgnoreCase("CHAR")) {
+                                    // 跳过括号和长度，直接组合
+                                    if (i + 2 < cleanedElements.size() && 
+                                        isNumeric((String) cleanedElements.get(i + 2))) {
+                                        String length = (String) cleanedElements.get(i + 2);
+                                        currentColumnElements.add("(" + length + ")");
+                                        i += 3; // 跳过 '(', length, ')'
+                                    }
+                                }
+                                
+                                // 完成当前列定义
+                                if (currentColumnName != null) {
+                                    columnNames.add(currentColumnName);
+                                    dataTypes.add(String.join("", currentColumnElements));
+                                    currentColumnName = null;
+                                    currentColumnElements.clear();
+                                }
+                            }
+                            // 如果是其他数据类型（不需要长度参数）
+                            else if (element.equalsIgnoreCase("INT") || 
+                                    element.equalsIgnoreCase("FLOAT") || 
+                                    element.equalsIgnoreCase("DOUBLE") ||
+                                    element.equalsIgnoreCase("BOOLEAN") ||
+                                    element.equalsIgnoreCase("DATE")) {
+                                if (currentColumnName != null) {
+                                    columnNames.add(currentColumnName);
+                                    dataTypes.add(element);
+                                    currentColumnName = null;
+                                    currentColumnElements.clear();
+                                }
+                            }
+                        }
+                    }
+                    
+                    createNode.tableName = tableName;
+                    for (int i = 0; i < columnNames.size(); i++) {
+                        createNode.columns.add(new ColumnDefinition(columnNames.get(i), dataTypes.get(i)));
+                    }
+                    
+                    astStack.push(createNode);
+                }
+                else if (rootNode instanceof InsertNode) {
+                    InsertNode insertNode = (InsertNode) rootNode;
+                    
+                    // 解析INSERT的元素
+                    List<String> columns = new ArrayList<>();
+                    List<Object> values = new ArrayList<>();
+                    String tableName = "";
+                    
+                    // 清理标记并提取有用信息
+                    List<Object> cleanedElements = new ArrayList<>();
+                    for (Object element : elements) {
+                        if (element instanceof String) {
+                            String str = (String) element;
+                            if (!str.contains("_START")) { // 忽略标记
+                                cleanedElements.add(str);
+                            }
+                        } else if (element != null) {
+                            cleanedElements.add(element);
+                        }
+                    }
+                    
+                    // 对于INSERT语句，需要分析结构
+                    // INSERT INTO table (col1, col2) VALUES (val1, val2)
+                    if (!cleanedElements.isEmpty()) {
+                        tableName = (String) cleanedElements.get(0);
+                        
+                        // 简化处理：假设前半部分是列名，后半部分是值
+                        int mid = cleanedElements.size() / 2;
+                        for (int i = 1; i <= mid; i++) {
+                            if (i < cleanedElements.size()) {
+                                columns.add((String) cleanedElements.get(i));
+                            }
+                        }
+                        for (int i = mid + 1; i < cleanedElements.size(); i++) {
+                            values.add(cleanedElements.get(i));
+                        }
+                    }
+                    
+                    insertNode.tableName = tableName;
+                    insertNode.columns = columns;
+                    insertNode.values = values;
+                    
+                    astStack.push(insertNode);
+                }
+                else if (rootNode instanceof DeleteNode) {
+                    DeleteNode deleteNode = (DeleteNode) rootNode;
+                    
+                    // 解析DELETE的元素
+                    String tableName = "";
+                    ExpressionNode whereClause = null;
+                    
+                    // 清理标记并提取有用信息
+                    List<Object> cleanedElements = new ArrayList<>();
+                    for (Object element : elements) {
+                        if (element instanceof String) {
+                            String str = (String) element;
+                            if (!str.contains("_START")) { // 忽略标记
+                                cleanedElements.add(str);
+                            }
+                        } else if (element instanceof ExpressionNode) {
+                            whereClause = (ExpressionNode) element;
+                        } else if (element != null) {
+                            cleanedElements.add(element);
+                        }
+                    }
+                    
+                    // 对于DELETE语句，第一个字符串是表名
+                    if (!cleanedElements.isEmpty()) {
+                        tableName = (String) cleanedElements.get(0);
+                    }
+                    
+                    deleteNode.tableName = tableName;
+                    deleteNode.whereClause = whereClause;
+                    
+                    astStack.push(deleteNode);
+                }
+                // 可以添加其他节点类型的处理逻辑
+            }
+        } catch (Exception e) {
+            System.err.println("最终AST构建错误: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     // 获取分析输出
     public String getOutput() {
         return output.toString();
+    }
+    
+    // 辅助方法：检查是否为标识符
+    private boolean isIdentifier(String str) {
+        if (str == null || str.isEmpty()) {
+            return false;
+        }
+        
+        // 简单的标识符检查：以字母或下划线开头，后跟字母、数字或下划线
+        char first = str.charAt(0);
+        if (!Character.isLetter(first) && first != '_') {
+            return false;
+        }
+        
+        for (int i = 1; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (!Character.isLetterOrDigit(c) && c != '_') {
+                return false;
+            }
+        }
+        
+        // 不应该是关键字
+        return !isDataTypeKeyword(str);
+    }
+    
+    // 辅助方法：检查是否为数据类型关键字
+    private boolean isDataTypeKeyword(String str) {
+        if (str == null) {
+            return false;
+        }
+        String upper = str.toUpperCase();
+        return upper.equals("INT") || upper.equals("INTEGER") ||
+               upper.equals("VARCHAR") || upper.equals("CHAR") ||
+               upper.equals("FLOAT") || upper.equals("DOUBLE") ||
+               upper.equals("BOOLEAN") || upper.equals("DATE") ||
+               upper.equals("DATETIME") || upper.equals("TEXT");
+    }
+    
+    // 辅助方法：检查是否为数字
+    private boolean isNumeric(String str) {
+        if (str == null || str.isEmpty()) {
+            return false;
+        }
+        try {
+            Integer.parseInt(str);
+            return true;
+        } catch (NumberFormatException e) {
+            try {
+                Double.parseDouble(str);
+                return true;
+            } catch (NumberFormatException e2) {
+                return false;
+            }
+        }
     }
 }

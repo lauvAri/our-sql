@@ -55,5 +55,10 @@ public class BinaryExpression implements Expression {
         }
         throw new ClassCastException("Cannot compare " + left.getClass() + " with " + right.getClass());
     }
+    
+    @Override
+    public String toString() {
+        return "(" + left + " " + operator.getSymbol() + " " + right + ")";
+    }
 }
 

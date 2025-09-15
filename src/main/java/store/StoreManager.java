@@ -14,7 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class StoreManager {
@@ -98,12 +100,28 @@ public class StoreManager {
     }
 
     public void close() {
-        for (String tableName : tables.keySet()) {
-            persistTable(tableName, tables.get(tableName));
-        }
-        for (String tableName : schemas.keySet()) {
-            persistSchema(tableName, schemas.get(tableName));
-        }
+        // 阻塞式IO
+//        for (String tableName : tables.keySet()) {
+//            persistTable(tableName, tables.get(tableName));
+//        }
+//        for (String tableName : schemas.keySet()) {
+//            persistSchema(tableName, schemas.get(tableName));
+//        }
+
+        // 并行持久化所有表
+        List<Map.Entry<String, Table>> tablesToPersist = new ArrayList<>(tables.entrySet());
+
+        tablesToPersist.parallelStream().forEach(entry -> {
+            String tableName = entry.getKey();
+            Table table = entry.getValue();
+            persistTable(tableName, table);
+        });
+
+        // 持久化所有schema
+        List<TableSchema> schemasToPersist = new ArrayList<>(schemas.values());
+        schemasToPersist.parallelStream().forEach(schema -> {
+            persistSchema(schema.tableName(), schema);
+        });
     }
 
     private Table loadTable(String tableName) {
@@ -145,19 +163,28 @@ public class StoreManager {
     }
 
     private void loadAllTables() {
-        // todo 从磁盘读取所有表
-
         Table table = loadTable(SystemCatalog.CATALOG_TABLE_NAME);
+//        if (table != null) {
+//            List<Record> records = table.getAllRecords();
+//            for (Record record : records) {
+//                logger.info("find: {} in disk", record.getValue("id")); // 这里目前可以获取到表名
+//                if (record.getValue("id") != null &&  !record.getJsonString("id").equals(SystemCatalog.CATALOG_TABLE_NAME)){
+//                    TableSchema schema = TableSchema.fromJson(record.getJsonString("schema_json"));
+//                    tables.put(record.getJsonString("id"), new InMemoryTable(schema));
+//                    schemas.put(record.getJsonString("id"), schema);
+//                }
+//            }
+//        }
+        // 多线程并行(parallelStream)读取表
         if (table != null) {
             List<Record> records = table.getAllRecords();
-            for (Record record : records) {
-                logger.info("find: {} in disk", record.getValue("id")); // 这里目前可以获取到表名
+            records.parallelStream().forEach(record -> {
                 if (record.getValue("id") != null &&  !record.getJsonString("id").equals(SystemCatalog.CATALOG_TABLE_NAME)){
                     TableSchema schema = TableSchema.fromJson(record.getJsonString("schema_json"));
                     tables.put(record.getJsonString("id"), new InMemoryTable(schema));
                     schemas.put(record.getJsonString("id"), schema);
                 }
-            }
+            });
         }
 //        tables.put(SystemCatalog.CATALOG_TABLE_NAME, table);
     }

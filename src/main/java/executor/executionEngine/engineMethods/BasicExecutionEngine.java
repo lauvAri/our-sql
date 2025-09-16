@@ -1,9 +1,6 @@
 package executor.executionEngine.engineMethods;
 
-import common.plan.CreateTablePlan;
-import common.plan.DeletePlan;
-import common.plan.InsertPlan;
-import common.plan.SelectPlan;
+import common.plan.*;
 import executor.common.*;
 import executor.common.Record;
 import executor.common.orderby.OrderByClause;
@@ -15,6 +12,7 @@ import executor.storageEngine.StorageEngine;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -276,5 +274,67 @@ public class BasicExecutionEngine {
         return columns;
     }
 
+    /**
+     * 执行更新操作
+     * @param storage 存储引擎
+     * @param plan 更新计划
+     * @return 影响的行数
+     */
+    public static int executeUpdate(StorageEngine storage, UpdatePlan plan) {
+        Table table = storage.openTable(plan.getTableName());
+        AtomicInteger count = new AtomicInteger();
+        EvaluateFilter evaluateFilter = new EvaluateFilter();
+
+        // 1. 检查是否有可用的索引用于WHERE条件
+        Index usableIndex = findUsableIndex(table, plan.getFilter());
+
+        // 2. 定义更新逻辑
+        Consumer<Record> updateAction = record -> {
+            // 创建新记录副本
+            Map<String, Object> newFields = new HashMap<>(record.fields());
+
+            // 应用所有SET子句的更新
+            plan.getSetValues().forEach((column, newValue) -> {
+                // 获取列定义以进行类型转换
+                ColumnDefinition colDef = table.getSchema().columns().stream()
+                        .filter(c -> c.name().equals(column))
+                        .findFirst()
+                        .orElseThrow(() -> new ExecutionException("Column not found: " + column));
+
+                // 转换值类型并更新
+                newFields.put(column, convertValue(colDef.type(), newValue));
+            });
+
+            // 替换原记录
+            table.update(record, new Record(newFields));
+            count.incrementAndGet();
+        };
+
+        // 3. 根据是否有索引选择执行路径
+        if (usableIndex != null) {
+            // 使用索引扫描优化
+            try (CloseableIterator<Record> iterator = usableIndex.search(extractIndexKey(plan.getFilter()))) {
+                iterator.forEachRemaining(record -> {
+                    if (evaluateFilter.evaluateFilter(plan.getFilter(), record)) {
+                        updateAction.accept(record);
+                    }
+                });
+            }
+        } else {
+            // 全表扫描
+            try (CloseableIterator<Record> iterator = table.scan()) {
+                iterator.forEachRemaining(record -> {
+                    if (evaluateFilter.evaluateFilter(plan.getFilter(), record)) {
+                        updateAction.accept(record);
+                    }
+                });
+            }catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        storage.saveTable(plan.getTableName(), table);
+        return count.get();
+    }
 
 }

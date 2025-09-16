@@ -1,15 +1,16 @@
 package storage;
 
 import com.sun.jdi.request.ExceptionRequest;
-import common.plan.CreateTablePlan;
-import common.plan.DeletePlan;
-import common.plan.InsertPlan;
-import common.plan.SelectPlan;
+import common.plan.*;
 import executor.common.Table;
 import executor.common.TableSchema;
 import executor.common.orderby.OrderByClause;
 import executor.executionEngine.ExecutionEngine;
 import executor.executionEngine.ExecutionResult;
+import executor.expression.BinaryExpression;
+import executor.expression.ColumnReference;
+import executor.expression.ConstantExpression;
+import executor.expression.Expression;
 import executor.storageEngine.StorageEngine;
 import executor.storageEngine.StorageEngineImpl;
 import executor.systemCatalog.CatalogManager;
@@ -23,6 +24,7 @@ import storage.service.StorageService;
 import store.StoreManager;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class SQLTest {
@@ -74,32 +76,48 @@ public class SQLTest {
 
 
 
-        // 第4步：插入数据
-        String insertSQL = "INSERT INTO student (id, name, age) VALUES (1, 'Alice', 20);";
-        System.out.println("\n3. 正在插入数据: " + insertSQL);
+//        // 第4步：插入数据
+//        String insertSQL = "INSERT INTO student (id, name, age) VALUES (1, 'Alice', 20);";
+//        System.out.println("\n3. 正在插入数据: " + insertSQL);
+//
+//        InsertPlan insertPlan = compiler.compileInsert(insertSQL);
+//        executionEngine.execute(insertPlan);
+//
+//        insertSQL = "INSERT INTO student (id, name, age) VALUES (2, 'Alice', 20);";
+//        System.out.println("\n3. 正在插入数据: " + insertSQL);
+//
+//        insertPlan = compiler.compileInsert(insertSQL);
+//        executionEngine.execute(insertPlan);
+//
+//        insertSQL = "INSERT INTO student (id, name, age) VALUES (3, 'Alice', 20);";
+//        System.out.println("\n3. 正在插入数据: " + insertSQL);
+//
+//        insertPlan = compiler.compileInsert(insertSQL);
+//        executionEngine.execute(insertPlan);
 
-        InsertPlan insertPlan = compiler.compileInsert(insertSQL);
-        executionEngine.execute(insertPlan);
+//        String deleteSQL = "DELETE FROM student WHERE id = 1;";
+//        System.out.println("\n4. 正在删除数据: " + deleteSQL);
+//
+//        DeletePlan deletePlan = compiler.compileDelete(deleteSQL);
+//        System.out.println("   ✅ 编译成功 - 删除表: " + deletePlan.getTableName());
+//        System.out.println("   - 删除条件: " + deletePlan.getFilter());
+//        executionEngine.execute(deletePlan);
 
-        insertSQL = "INSERT INTO student (id, name, age) VALUES (2, 'Alice', 20);";
-        System.out.println("\n3. 正在插入数据: " + insertSQL);
 
-        insertPlan = compiler.compileInsert(insertSQL);
-        executionEngine.execute(insertPlan);
-
-        insertSQL = "INSERT INTO student (id, name, age) VALUES (3, 'Alice', 20);";
-        System.out.println("\n3. 正在插入数据: " + insertSQL);
-
-        insertPlan = compiler.compileInsert(insertSQL);
-        executionEngine.execute(insertPlan);
-
-        String deleteSQL = "DELETE FROM student WHERE id = 1;";
-        System.out.println("\n4. 正在删除数据: " + deleteSQL);
-
-        DeletePlan deletePlan = compiler.compileDelete(deleteSQL);
-        System.out.println("   ✅ 编译成功 - 删除表: " + deletePlan.getTableName());
-        System.out.println("   - 删除条件: " + deletePlan.getFilter());
-        executionEngine.execute(deletePlan);
+        //更新表
+        System.out.println("UPDATE TABLE");
+        Expression condition = new BinaryExpression(
+                new ColumnReference("id"), BinaryExpression.Operator.EQ,
+                new ConstantExpression(1)
+        );
+        // 创建更新值映射
+        Map<String, Object> updates = Map.of(
+                "name", "Tom",
+                "age", 19
+        );
+        UpdatePlan updatePlan = new UpdatePlan("student",updates,condition);
+        ExecutionResult result = executionEngine.execute(updatePlan);
+        logger.info("data: {}", result.getData());
 
         // 第3步：查询表
         String selectSQL = "SELECT id, name FROM student WHERE age > 18;";
@@ -111,8 +129,9 @@ public class SQLTest {
         System.out.println("   ✅ 编译成功 - 查询表: " + selectPlan.getTableName());
         System.out.println("   - 选择列: " + selectPlan.getColumns());
         System.out.println("   - 过滤条件: " + selectPlan.getFilter());
-        ExecutionResult result = executionEngine.execute(selectPlan);
+        result = executionEngine.execute(selectPlan);
         logger.info("data: {}", result.getData()) ;
+
         storeManager.close();
     }
 }

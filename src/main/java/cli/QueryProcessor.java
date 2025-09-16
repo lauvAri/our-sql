@@ -135,6 +135,16 @@ public class QueryProcessor {
                     engine.execute(deletePlan);
                     return new QueryResult(true, "Delete successfully.");
 
+                case UPDATE:
+                    UpdatePlan updatePlan = (UpdatePlan) plan;
+                    System.out.println("   更新表: " + updatePlan.getTableName());
+                    System.out.println("   更新值: " + updatePlan.getSetValues());
+                    if (updatePlan.getFilter() != null) {
+                        System.out.println("   更新条件: " + updatePlan.getFilter());
+                    }
+                    result = engine.execute(updatePlan);
+                    return new QueryResult(true, result.getData().toString());
+
                 case CREATE_INDEX:
                 case DROP_INDEX:
                     System.out.println("   索引操作（暂不详细展示）");

@@ -116,6 +116,13 @@ INPUT:
 
 OUTPUT:
 
+    name                
+    ------------------------------------------------------------
+    'Alice'             
+    'Tom'
+    
+    (2 rows)
+
 #### 3.5 Select undefined column
 INPUT:
 

@@ -1,5 +1,11 @@
 package cli;
 
+import executor.common.Table;
+import executor.common.TableSchema;
+import executor.executionEngine.ExecutionEngine;
+import executor.storageEngine.StorageEngine;
+import executor.storageEngine.StorageEngineImpl;
+import executor.systemCatalog.CatalogManager;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.UserInterruptException;
@@ -8,19 +14,40 @@ import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import parser.semantic.CatalogAdapter;
+import parser.semantic.EnhancedMockCatalogAdapter;
+import parser.semantic.SQLCompiler;
 import storage.service.StorageService;
+import store.StoreManager;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) throws IOException {
         // --- 1. 系统初始化 ---
-        // 使用 StorageService 初始化
-        StorageService storageService = new StorageService("main.db", "main.idx");
-        QueryProcessor queryProcessor = new QueryProcessor(storageService);
+//        // 使用 StorageService 初始化
+//        StorageService storageService = new StorageService("main.db", "main.idx");
+        QueryProcessor queryProcessor = new QueryProcessor();
+        ConcurrentHashMap<String, Table> tables = new ConcurrentHashMap<>();
+        ConcurrentHashMap<String, TableSchema> schemas = new ConcurrentHashMap<>();
+
+        StoreManager storeManager = new StoreManager(tables, schemas);
+        StorageEngine storageEngine = new StorageEngineImpl(storeManager);
+
+        ExecutionEngine executionEngine = new ExecutionEngine(storageEngine);
+        queryProcessor.setEngine(executionEngine);
+
+        // 创建数据库目录和适配器
+        CatalogManager catalogManager = new CatalogManager(storageEngine);
+        CatalogAdapter catalogAdapter = new CatalogAdapter(catalogManager);
+
+        // SQL编译器
+        SQLCompiler sqlCompiler = new SQLCompiler(catalogAdapter);
+
 
         logger.info("Database system started. Welcome!");
         System.out.println("Enter SQL commands, end with a semicolon ';'. Type '.exit' to quit.");
@@ -58,7 +85,7 @@ public class Main {
                 sqlBuffer.setLength(0); // 清空buffer
 
                 // --- 4. 执行查询并打印结果 ---
-                QueryResult result = queryProcessor.process(finalSql);
+                QueryResult result = queryProcessor.process(finalSql, sqlCompiler);
                 printResult(result);
 
             } catch (UserInterruptException | EndOfFileException e) {
@@ -72,8 +99,7 @@ public class Main {
 
         // --- 5. 系统关闭 ---
         logger.info("Shutting down database system...");
-        storageService.flushAllPages();
-        storageService.close();
+        storeManager.close();
         logger.info("Shutdown complete.");
     }
 

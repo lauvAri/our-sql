@@ -26,21 +26,27 @@ public class Main {
             // 创建SQL编译器
             SQLCompiler compiler = new SQLCompiler(catalogAdapter);
             
-            System.out.println("=== SQL编译器简单演示 ===");
+            System.out.println("=== SQL编译器通用接口演示 ===");
             
-            // 第1步：创建表
+            // 第1步：创建表 - 使用通用编译接口
             String createSQL = "CREATE TABLE student(id INT, name VARCHAR(50), age INT);";
-            System.out.println("1. 正在创建表: " + createSQL);
+            System.out.println("1. 正在编译SQL: " + createSQL);
             
-            CreateTablePlan createPlan = compiler.compileCreateTable(createSQL);
-            System.out.println("   ✅ 编译成功 - 表名: " + createPlan.getTableName() + ", 列数: " + createPlan.getColumns().size());
+            LogicalPlan createPlan = compiler.compile(createSQL);
+            System.out.println("   ✅ 编译成功 - 操作类型: " + createPlan.getOperatorType());
             
-            // 显示详细的列信息
-            System.out.println("   列详情:");
-            for (int i = 0; i < createPlan.getColumns().size(); i++) {
-                common.Column col = createPlan.getColumns().get(i);
-                System.out.println("     列" + (i+1) + ": " + col.getName() + " (" + col.getType() + 
-                    ", 长度:" + col.getLength() + ", 主键:" + (col.isPrimaryKey() ? "是" : "否") + ")");
+            // 根据类型进行相应处理
+            if (createPlan instanceof CreateTablePlan) {
+                CreateTablePlan tablePlan = (CreateTablePlan) createPlan;
+                System.out.println("   - 表名: " + tablePlan.getTableName() + ", 列数: " + tablePlan.getColumns().size());
+                
+                // 显示详细的列信息
+                System.out.println("   列详情:");
+                for (int i = 0; i < tablePlan.getColumns().size(); i++) {
+                    common.Column col = tablePlan.getColumns().get(i);
+                    System.out.println("     列" + (i+1) + ": " + col.getName() + " (" + col.getType() + 
+                        ", 长度:" + col.getLength() + ", 主键:" + (col.isPrimaryKey() ? "是" : "否") + ")");
+                }
             }
 
             // 第2步：手动注册表到系统目录（为了演示）
@@ -52,32 +58,49 @@ public class Main {
             catalogAdapter.registerTable("student", schema);
             System.out.println("   ✅ 表已注册到系统目录");
 
-            // 第3步：查询表
+            // 第3步：查询表 - 使用通用编译接口
             String selectSQL = "SELECT id, name FROM student WHERE age > 18;";
-            System.out.println("\n2. 正在查询表: " + selectSQL);
+            System.out.println("\n2. 正在编译SQL: " + selectSQL);
 
-            SelectPlan selectPlan = compiler.compileSelect(selectSQL);
-            System.out.println("   ✅ 编译成功 - 查询表: " + selectPlan.getTableName());
-            System.out.println("   - 选择列: " + selectPlan.getColumns());
-            System.out.println("   - 过滤条件: " + selectPlan.getFilter());
+            LogicalPlan selectPlan = compiler.compile(selectSQL);
+            System.out.println("   ✅ 编译成功 - 操作类型: " + selectPlan.getOperatorType());
+            
+            if (selectPlan instanceof SelectPlan) {
+                SelectPlan queryPlan = (SelectPlan) selectPlan;
+                System.out.println("   - 查询表: " + queryPlan.getTableName());
+                System.out.println("   - 选择列: " + queryPlan.getColumns());
+                System.out.println("   - 过滤条件: " + queryPlan.getFilter());
+            }
 
-            // 第4步：插入数据
+            // 第4步：插入数据 - 使用通用编译接口
             String insertSQL = "INSERT INTO student (id, name, age) VALUES (1, 'Alice', 20);";
-            System.out.println("\n3. 正在插入数据: " + insertSQL);
+            System.out.println("\n3. 正在编译SQL: " + insertSQL);
 
-            InsertPlan insertPlan = compiler.compileInsert(insertSQL);
-            System.out.println("   ✅ 编译成功 - 插入表: " + insertPlan.getTableName());
-            System.out.println("   - 插入值: " + insertPlan.getValues());
+            LogicalPlan insertPlan = compiler.compile(insertSQL);
+            System.out.println("   ✅ 编译成功 - 操作类型: " + insertPlan.getOperatorType());
+            
+            if (insertPlan instanceof InsertPlan) {
+                InsertPlan dataPlan = (InsertPlan) insertPlan;
+                System.out.println("   - 插入表: " + dataPlan.getTableName());
+                System.out.println("   - 插入值: " + dataPlan.getValues());
+            }
 
-            // 第5步：删除数据
+            // 第5步：删除数据 - 使用通用编译接口
             String deleteSQL = "DELETE FROM student WHERE id = 1;";
-            System.out.println("\n4. 正在删除数据: " + deleteSQL);
+            System.out.println("\n4. 正在编译SQL: " + deleteSQL);
 
-            DeletePlan deletePlan = compiler.compileDelete(deleteSQL);
-            System.out.println("   ✅ 编译成功 - 删除表: " + deletePlan.getTableName());
-            System.out.println("   - 删除条件: " + deletePlan.getFilter());
+            LogicalPlan deletePlan = compiler.compile(deleteSQL);
+            System.out.println("   ✅ 编译成功 - 操作类型: " + deletePlan.getOperatorType());
+            
+            if (deletePlan instanceof DeletePlan) {
+                DeletePlan removePlan = (DeletePlan) deletePlan;
+                System.out.println("   - 删除表: " + removePlan.getTableName());
+                System.out.println("   - 删除条件: " + removePlan.getFilter());
+            }
 
-            System.out.println("\n🎉 SQL编译器演示完成！所有操作都成功编译。");
+            System.out.println("\n🎉 SQL编译器通用接口演示完成！");
+            System.out.println("   所有SQL语句都通过统一的compile()方法成功编译，");
+            System.out.println("   编译器自动识别SQL类型并生成相应的执行计划。");
             
         } catch (SQLCompilerException e) {
             System.err.println("❌ SQL编译失败: " + e.getMessage());

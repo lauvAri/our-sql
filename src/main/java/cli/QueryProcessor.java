@@ -115,8 +115,8 @@ public class QueryProcessor {
                     System.out.println("   查询表: " + selectPlan.getTableName());
                     System.out.println("   选择列: " + selectPlan.getColumns());
                     ExecutionResult result = engine.execute(selectPlan);
-                    return new QueryResult(true, result.getData().toString());
 
+                    return new QueryResult(selectPlan.getColumns(), getRecords(result, selectPlan.getColumns()));
                 case INSERT:
                     InsertPlan insertPlan = (InsertPlan) plan;
                     System.out.println("   插入表: " + insertPlan.getTableName());
@@ -213,5 +213,18 @@ public class QueryProcessor {
         } else {
             return 100; // 其他类型的默认大小
         }
+    }
+
+    private static List<List<Object>> getRecords(ExecutionResult result, List<String> columnNames) {
+        ArrayList<executor.common.Record> records = (ArrayList<executor.common.Record>)(result.getData());
+        List<List<Object>> results = new ArrayList<>();
+        for (executor.common.Record record : records) {
+            ArrayList<Object> row = new ArrayList<>();
+            for (String columnName : columnNames) {
+                row.add(record.getValue(columnName));
+            }
+            results.add(row);
+        }
+        return results;
     }
 }

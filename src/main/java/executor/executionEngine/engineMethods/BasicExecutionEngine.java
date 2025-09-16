@@ -161,8 +161,12 @@ public class BasicExecutionEngine {
 
                     results.add(projectColumns(record, plan.getColumns()));
                 }
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+                throw new RuntimeException(e);
             }
         }
+
 
         //limit函数
         if(plan.getLimit() >= 0){

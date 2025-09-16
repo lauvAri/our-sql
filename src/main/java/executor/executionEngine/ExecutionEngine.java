@@ -42,6 +42,8 @@ public class ExecutionEngine {
                 return BasicExecutionEngine.executeInsert(storage,(InsertPlan) plan);
             case SELECT:
                 return BasicExecutionEngine.executeSelect(storage,(SelectPlan) plan);
+            case UPDATE:
+                return BasicExecutionEngine.executeUpdate(storage,(UpdatePlan) plan);
             case DELETE:
                 return BasicExecutionEngine.executeDelete(storage,(DeletePlan) plan);
             case CREATE_INDEX:

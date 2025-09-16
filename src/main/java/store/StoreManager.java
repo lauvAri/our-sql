@@ -164,7 +164,10 @@ public class StoreManager {
 
     public void loadAllTables() {
         Table table = loadTable(SystemCatalog.CATALOG_TABLE_NAME);
-        tables.put(SystemCatalog.CATALOG_TABLE_NAME, table);
+        if (table != null) {
+            tables.put(SystemCatalog.CATALOG_TABLE_NAME, table);
+        }
+
 //        if (table != null) {
 //            List<Record> records = table.getAllRecords();
 //            for (Record record : records) {

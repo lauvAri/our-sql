@@ -54,10 +54,10 @@ public class StoreManagerBenchmark {
         storeManager.close();
     }
 
-    @Benchmark
-    public void testLoadAllTables() {
-        storeManager.loadAllTables();
-    }
+//    @Benchmark
+//    public void testLoadAllTables() {
+//        storeManager.loadAllTables();
+//    }
 
 
 }

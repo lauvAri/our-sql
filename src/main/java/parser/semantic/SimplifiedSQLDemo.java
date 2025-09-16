@@ -17,11 +17,13 @@ public class SimplifiedSQLDemo {
             EnhancedMockCatalogAdapter mockCatalog = new EnhancedMockCatalogAdapter();
             SQLCompiler compiler = new SQLCompiler(mockCatalog);
             
-            // 测试支持的SQL语句（包括ORDER BY、LIMIT和UPDATE）
+            // 测试支持的SQL语句（包括ORDER BY、LIMIT、UPDATE和SELECT *展开）
             String[] testSQLs = {
                 "CREATE TABLE users(id INT, username VARCHAR(50), email VARCHAR(100));",
                 "INSERT INTO users (id, username, email) VALUES (1, 'john_doe', 'john@example.com');",
                 "SELECT username, email FROM users WHERE id > 0;",
+                "SELECT * FROM users;",
+                "SELECT * FROM users WHERE id = 1;",
                 "SELECT * FROM users ORDER BY username ASC;",
                 "SELECT * FROM users ORDER BY id DESC LIMIT 10;",
                 "UPDATE users SET email = 'john.doe@newdomain.com' WHERE id = 1;",

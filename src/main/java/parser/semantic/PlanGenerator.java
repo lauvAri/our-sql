@@ -70,6 +70,8 @@ public class PlanGenerator {
         String tableName = ASTFieldAccessor.getSelectTableName(ast);
         List<String> columns = ASTFieldAccessor.getSelectColumns(ast);
         Object whereClause = ASTFieldAccessor.getSelectWhereClause(ast);
+        Object orderByClause = ASTFieldAccessor.getSelectOrderBy(ast);
+        Integer limitValue = ASTFieldAccessor.getSelectLimit(ast);
         
         // 检查表是否存在
         if (!catalog.tableExists(tableName)) {
@@ -94,7 +96,22 @@ public class PlanGenerator {
             filter = buildExpression(whereClause, table);
         }
         
-        return new SelectPlan(tableName, columns, filter);
+        // 创建SelectPlan，根据是否有ORDER BY和LIMIT使用不同的构造函数
+        if (orderByClause != null && limitValue != null && limitValue > 0) {
+            // 有ORDER BY和LIMIT
+            return new SelectPlan(tableName, columns, filter, 
+                                (executor.common.orderby.OrderByClause) orderByClause, limitValue);
+        } else if (orderByClause != null) {
+            // 只有ORDER BY
+            return new SelectPlan(tableName, columns, filter, 
+                                (executor.common.orderby.OrderByClause) orderByClause);
+        } else if (limitValue != null && limitValue > 0) {
+            // 只有LIMIT
+            return new SelectPlan(tableName, columns, filter, limitValue);
+        } else {
+            // 基本SELECT
+            return new SelectPlan(tableName, columns, filter);
+        }
     }
     
     /**

@@ -25,6 +25,12 @@ public class SQLParser {
     private static final String SELLIST_TAIL = "SelListTail";
     private static final String TBL = "Tbl";
     private static final String WHERE_CLAUSE = "WhereClause";
+    private static final String ORDER_CLAUSE = "OrderClause";
+    private static final String ORDER_LIST = "OrderList";
+    private static final String ORDER_LIST_TAIL = "OrderListTail";
+    private static final String ORDER_ITEM = "OrderItem";
+    private static final String ORDER_DIRECTION = "OrderDirection";
+    private static final String LIMIT_CLAUSE = "LimitClause";
     private static final String LOGICAL_EXPRESSION = "LogicalExpression";
     private static final String LOGICAL_EXPRESSION_TAIL = "LogicalExpressionTail";
     private static final String LOGICAL_TERM = "LogicalTerm";
@@ -172,9 +178,31 @@ public class SQLParser {
                     } else if (top.equals("FROM") && currentToken.getValue().equalsIgnoreCase("FROM")) {
                         matched = true;
                         matchedValue = "FROM";
+                        astStack.push("FROM");
                     } else if (top.equals("WHERE") && currentToken.getValue().equalsIgnoreCase("WHERE")) {
                         matched = true;
                         matchedValue = "WHERE";
+                        astStack.push("WHERE");
+                    } else if (top.equals("ORDER") && currentToken.getValue().equalsIgnoreCase("ORDER")) {
+                        matched = true;
+                        matchedValue = "ORDER";
+                        astStack.push("ORDER");
+                    } else if (top.equals("BY") && currentToken.getValue().equalsIgnoreCase("BY")) {
+                        matched = true;
+                        matchedValue = "BY";
+                        astStack.push("BY");
+                    } else if (top.equals("LIMIT") && currentToken.getValue().equalsIgnoreCase("LIMIT")) {
+                        matched = true;
+                        matchedValue = "LIMIT";
+                        astStack.push("LIMIT");
+                    } else if (top.equals("ASC") && currentToken.getValue().equalsIgnoreCase("ASC")) {
+                        matched = true;
+                        matchedValue = "ASC";
+                        astStack.push("ASC");
+                    } else if (top.equals("DESC") && currentToken.getValue().equalsIgnoreCase("DESC")) {
+                        matched = true;
+                        matchedValue = "DESC";
+                        astStack.push("DESC");
                     } else if (top.equals("ID") && currentToken.getType() == Token.TokenType.IDENTIFIER) {
                         matched = true;
                         matchedValue = "ID:" + currentToken.getValue();
@@ -528,6 +556,11 @@ public class SQLParser {
                 symbol.equals("DELETE") ||
                 symbol.equals("FROM") ||
                 symbol.equals("WHERE") ||
+                symbol.equals("ORDER") ||
+                symbol.equals("BY") ||
+                symbol.equals("LIMIT") ||
+                symbol.equals("ASC") ||
+                symbol.equals("DESC") ||
                 symbol.equals("AND") ||
                 symbol.equals("OR") ||
                 symbol.equals("NOT") ||
@@ -588,7 +621,7 @@ public class SQLParser {
 
             case QUERY:
                 if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("SELECT")) {
-                    return "SELECT SelList FROM Tbl WhereClause";
+                    return "SELECT SelList FROM Tbl WhereClause OrderClause LimitClause";
                 }
                 break;
 
@@ -634,6 +667,47 @@ public class SQLParser {
             case WHERE_CLAUSE:
                 if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("WHERE")) {
                     return "WHERE LogicalExpression";
+                } else {
+                    return "ε"; // 空产生式
+                }
+
+            case ORDER_CLAUSE:
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("ORDER")) {
+                    return "ORDER BY OrderList";
+                } else {
+                    return "ε"; // 空产生式
+                }
+
+            case ORDER_LIST:
+                if (tokenType.equals("IDENTIFIER")) {
+                    return "OrderItem OrderListTail";
+                }
+                break;
+
+            case ORDER_LIST_TAIL:
+                if (tokenType.equals("DELIMITER") && tokenValue.equals(",")) {
+                    return ", OrderItem OrderListTail";
+                } else {
+                    return "ε"; // 空产生式
+                }
+
+            case ORDER_ITEM:
+                if (tokenType.equals("IDENTIFIER")) {
+                    return "ID OrderDirection";
+                }
+                break;
+
+            case ORDER_DIRECTION:
+                if (tokenType.equals("KEYWORD") && 
+                    (tokenValue.equalsIgnoreCase("ASC") || tokenValue.equalsIgnoreCase("DESC"))) {
+                    return tokenValue.toUpperCase();
+                } else {
+                    return "ε"; // 默认ASC
+                }
+
+            case LIMIT_CLAUSE:
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("LIMIT")) {
+                    return "LIMIT CONSTANT";
                 } else {
                     return "ε"; // 空产生式
                 }
@@ -854,40 +928,75 @@ public class SQLParser {
                     String tableName = "";
                     ExpressionNode whereClause = null;
                     
-                    // 清理标记并提取有用信息
-                    List<Object> cleanedElements = new ArrayList<>();
+                    // 智能解析：基于SQL语法结构来识别不同部分
+                    List<String> stringElements = new ArrayList<>();
                     for (Object element : elements) {
                         if (element instanceof String) {
                             String str = (String) element;
-                            if (!str.contains("_START")) { // 忽略标记
-                                cleanedElements.add(str);
+                            if (!str.contains("_START") && !str.equals("*")) { // 忽略标记，但保留*
+                                stringElements.add(str);
+                            } else if (str.equals("*")) {
+                                columns.add("*");
                             }
                         } else if (element instanceof ExpressionNode) {
                             whereClause = (ExpressionNode) element;
-                        } else if (element != null) {
-                            cleanedElements.add(element);
                         }
                     }
                     
-                    // 根据SQL语法，列名在前，表名在后，WHERE条件已经提取
-                    // 对于 "SELECT id, name FROM users WHERE age > 18"
-                    // cleanedElements 应该包含: ["id", "name", "users"]
-                    int i = 0;
-                    while (i < cleanedElements.size()) {
-                        Object element = cleanedElements.get(i);
-                        if (element instanceof String) {
-                            String str = (String) element;
-                            // 表名是FROM之后的第一个标识符
-                            // 我们需要一个更聪明的方法来区分列名和表名
-                            if (i == cleanedElements.size() - 1) {
-                                // 最后一个字符串应该是表名
-                                tableName = str;
-                            } else {
-                                // 其他字符串是列名
+                    // 基于SQL语法来解析字符串元素
+                    // SQL结构: SELECT columns FROM table [WHERE condition] [ORDER BY column [ASC|DESC]] [LIMIT number]
+                    boolean foundFrom = false;
+                    boolean foundOrderBy = false;
+                    boolean foundLimit = false;
+                    
+                    for (int i = 0; i < stringElements.size(); i++) {
+                        String str = stringElements.get(i);
+                        
+                        if (str.equalsIgnoreCase("FROM")) {
+                            foundFrom = true;
+                        } else if (str.equalsIgnoreCase("ORDER")) {
+                            foundOrderBy = true;
+                        } else if (str.equalsIgnoreCase("BY")) {
+                            // 跳过BY关键字
+                            continue;
+                        } else if (str.equalsIgnoreCase("LIMIT")) {
+                            foundLimit = true;
+                        } else if (str.equalsIgnoreCase("ASC") || str.equalsIgnoreCase("DESC")) {
+                            // 处理排序方向，暂时忽略
+                            continue;
+                        } else if (foundLimit) {
+                            // LIMIT之后的数字
+                            try {
+                                selectNode.limit = Integer.parseInt(str);
+                            } catch (NumberFormatException e) {
+                                // 忽略无效的数字
+                            }
+                        } else if (foundOrderBy) {
+                            // ORDER BY之后的列名
+                            if (selectNode.orderBy == null) {
+                                selectNode.orderBy = new executor.common.orderby.OrderByClause();
+                            }
+                            // 检查下一个元素是否是ASC/DESC
+                            boolean ascending = true; // 默认ASC
+                            if (i + 1 < stringElements.size()) {
+                                String next = stringElements.get(i + 1);
+                                if (next.equalsIgnoreCase("DESC")) {
+                                    ascending = false;
+                                    i++; // 跳过DESC
+                                } else if (next.equalsIgnoreCase("ASC")) {
+                                    i++; // 跳过ASC
+                                }
+                            }
+                            selectNode.orderBy.addItem(str, ascending);
+                        } else if (foundFrom && tableName.isEmpty()) {
+                            // FROM之后的第一个标识符是表名
+                            tableName = str;
+                        } else if (!foundFrom) {
+                            // FROM之前的标识符是列名
+                            if (!columns.contains("*")) { // 如果不是SELECT *
                                 columns.add(str);
                             }
                         }
-                        i++;
                     }
                     
                     selectNode.columns = columns;
@@ -1031,24 +1140,33 @@ public class SQLParser {
                     String tableName = "";
                     ExpressionNode whereClause = null;
                     
-                    // 清理标记并提取有用信息
-                    List<Object> cleanedElements = new ArrayList<>();
+                    // 智能解析：基于SQL语法结构来识别不同部分
+                    List<String> stringElements = new ArrayList<>();
                     for (Object element : elements) {
                         if (element instanceof String) {
                             String str = (String) element;
                             if (!str.contains("_START")) { // 忽略标记
-                                cleanedElements.add(str);
+                                stringElements.add(str);
                             }
                         } else if (element instanceof ExpressionNode) {
                             whereClause = (ExpressionNode) element;
-                        } else if (element != null) {
-                            cleanedElements.add(element);
                         }
                     }
                     
-                    // 对于DELETE语句，第一个字符串是表名
-                    if (!cleanedElements.isEmpty()) {
-                        tableName = (String) cleanedElements.get(0);
+                    // 基于SQL语法来解析字符串元素
+                    // SQL结构: DELETE FROM table [WHERE condition]
+                    boolean foundFrom = false;
+                    
+                    for (String str : stringElements) {
+                        if (str.equalsIgnoreCase("FROM")) {
+                            foundFrom = true;
+                        } else if (str.equalsIgnoreCase("WHERE")) {
+                            // 跳过WHERE关键字
+                            continue;
+                        } else if (foundFrom && tableName.isEmpty()) {
+                            // FROM之后的第一个标识符是表名
+                            tableName = str;
+                        }
                     }
                     
                     deleteNode.tableName = tableName;

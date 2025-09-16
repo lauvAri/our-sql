@@ -39,6 +39,24 @@ public class ASTFieldAccessor {
     }
     
     /**
+     * 获取SelectNode的ORDER BY子句
+     */
+    public static Object getSelectOrderBy(ASTNode node) {
+        return getField(node, "orderBy");
+    }
+    
+    /**
+     * 获取SelectNode的LIMIT值
+     */
+    public static Integer getSelectLimit(ASTNode node) {
+        Object limit = getField(node, "limit");
+        if (limit instanceof Integer) {
+            return (Integer) limit;
+        }
+        return -1; // 表示无限制
+    }
+    
+    /**
      * 获取CreateTableNode的字段
      */
     public static String getCreateTableName(ASTNode node) {

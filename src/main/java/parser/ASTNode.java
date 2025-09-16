@@ -1,6 +1,7 @@
 package parser;
 import java.util.ArrayList;
 import java.util.List;
+import executor.common.orderby.OrderByClause;
 
 // AST节点基类
 public abstract class ASTNode {
@@ -18,16 +19,30 @@ class SelectNode extends ASTNode {
     public List<String> columns;
     public String tableName;
     public ExpressionNode whereClause;
+    public OrderByClause orderBy;
+    public int limit = -1; // -1表示无限制
 
     public SelectNode() {
         this.type = "SELECT";
         this.columns = new ArrayList<>();
+        this.orderBy = null;
+        this.limit = -1;
     }
 
     @Override
     public String toString() {
-        return String.format("SELECT %s FROM %s WHERE %s",
-                columns, tableName, whereClause != null ? whereClause.toString() : "NULL");
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("SELECT %s FROM %s", columns, tableName));
+        if (whereClause != null) {
+            sb.append(" WHERE ").append(whereClause.toString());
+        }
+        if (orderBy != null) {
+            sb.append(" ORDER BY ").append(orderBy.toString());
+        }
+        if (limit > 0) {
+            sb.append(" LIMIT ").append(limit);
+        }
+        return sb.toString();
     }
 }
 

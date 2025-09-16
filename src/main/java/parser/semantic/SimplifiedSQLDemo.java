@@ -17,11 +17,13 @@ public class SimplifiedSQLDemo {
             EnhancedMockCatalogAdapter mockCatalog = new EnhancedMockCatalogAdapter();
             SQLCompiler compiler = new SQLCompiler(mockCatalog);
             
-            // 测试支持的SQL语句（使用正确的数据类型）
+            // 测试支持的SQL语句（包括ORDER BY和LIMIT）
             String[] testSQLs = {
                 "CREATE TABLE users(id INT, username VARCHAR(50), email VARCHAR(100));",
                 "INSERT INTO users (id, username, email) VALUES (1, 'john_doe', 'john@example.com');",
                 "SELECT username, email FROM users WHERE id > 0;",
+                "SELECT * FROM users ORDER BY username ASC;",
+                "SELECT * FROM users ORDER BY id DESC LIMIT 10;",
                 "DELETE FROM users WHERE id = 1;",
                 "CREATE TABLE products(pid INT, name VARCHAR(100), price VARCHAR(20));"
             };

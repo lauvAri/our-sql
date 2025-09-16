@@ -44,6 +44,9 @@ public class SemanticAnalyzer {
                 case "DELETE":
                     analyzeDelete(ast);
                     break;
+                case "UPDATE":
+                    analyzeUpdate(ast);
+                    break;
                 default:
                     addError("未知的语句类型: " + nodeType);
             }
@@ -265,6 +268,44 @@ public class SemanticAnalyzer {
             addQuadruple("DELETE", tableName, whereResult, null);
         } catch (Exception e) {
             addError("DELETE语句分析错误: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 分析UPDATE语句
+     */
+    private void analyzeUpdate(ASTNode ast) {
+        try {
+            String tableName = ASTFieldAccessor.getUpdateTableName(ast);
+            java.util.Map<String, Object> setValues = ASTFieldAccessor.getUpdateSetValues(ast);
+            Object whereClause = ASTFieldAccessor.getUpdateWhereClause(ast);
+            
+            // 检查表是否存在
+            if (!catalog.tableExists(tableName)) {
+                addError("表 '" + tableName + "' 不存在");
+                return;
+            }
+            
+            TableMetadata table = catalog.getTable(tableName);
+            
+            // 检查SET子句中的列是否存在
+            for (String columnName : setValues.keySet()) {
+                if (!table.hasColumn(columnName)) {
+                    addError("表 '" + tableName + "' 中不存在列 '" + columnName + "'");
+                    return;
+                }
+            }
+            
+            // 分析WHERE条件
+            String whereResult = null;
+            if (whereClause != null) {
+                whereResult = analyzeExpression(whereClause, table);
+            }
+            
+            // 生成UPDATE四元式
+            addQuadruple("UPDATE", tableName, setValues.toString(), whereResult);
+        } catch (Exception e) {
+            addError("UPDATE语句分析错误: " + e.getMessage());
         }
     }
     

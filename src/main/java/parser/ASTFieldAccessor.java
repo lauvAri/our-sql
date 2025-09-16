@@ -39,6 +39,24 @@ public class ASTFieldAccessor {
     }
     
     /**
+     * 获取SelectNode的ORDER BY子句
+     */
+    public static Object getSelectOrderBy(ASTNode node) {
+        return getField(node, "orderBy");
+    }
+    
+    /**
+     * 获取SelectNode的LIMIT值
+     */
+    public static Integer getSelectLimit(ASTNode node) {
+        Object limit = getField(node, "limit");
+        if (limit instanceof Integer) {
+            return (Integer) limit;
+        }
+        return -1; // 表示无限制
+    }
+    
+    /**
      * 获取CreateTableNode的字段
      */
     public static String getCreateTableName(ASTNode node) {
@@ -102,5 +120,21 @@ public class ASTFieldAccessor {
     
     public static String getColumnDefinitionDataType(Object colDef) {
         return (String) getField(colDef, "dataType");
+    }
+    
+    /**
+     * 获取UpdateNode的字段
+     */
+    public static String getUpdateTableName(ASTNode node) {
+        return (String) getField(node, "tableName");
+    }
+    
+    @SuppressWarnings("unchecked")
+    public static java.util.Map<String, Object> getUpdateSetValues(ASTNode node) {
+        return (java.util.Map<String, Object>) getField(node, "setValues");
+    }
+    
+    public static Object getUpdateWhereClause(ASTNode node) {
+        return getField(node, "whereClause");
     }
 }

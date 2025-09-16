@@ -53,7 +53,7 @@ public class SQLLexer {
             "VALUES", "DELETE", "UPDATE", "SET", "AND", "OR", "NOT", "NULL",
             "INT", "VARCHAR", "CHAR", "DATE", "FLOAT", "DOUBLE", "BOOLEAN", 
             "PRIMARY", "KEY", "DROP", "ALTER", "CHECK", "IN", "JOIN", "ON",
-            "TRUE", "FALSE"
+            "TRUE", "FALSE", "ORDER", "BY", "LIMIT", "ASC", "DESC"
     };
 
     // 运算符列表

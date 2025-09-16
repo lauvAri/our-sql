@@ -2,6 +2,8 @@ package parser;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
+import java.util.Map;
+import java.util.HashMap;
 
 public class SQLParser {
     private List<Token> tokens;
@@ -20,6 +22,7 @@ public class SQLParser {
     private static final String QUERY = "Query";
     private static final String CREATE_TABLE = "CreateTable";
     private static final String INSERT = "Insert";
+    private static final String UPDATE = "Update";
     private static final String DELETE = "Delete";
     private static final String SELLIST = "SelList";
     private static final String SELLIST_TAIL = "SelListTail";
@@ -47,6 +50,10 @@ public class SQLParser {
     private static final String COLUMN_CONSTRAINT = "ColumnConstraint";
     private static final String COL_LIST = "ColList";
     private static final String COL_LIST_TAIL = "ColListTail";
+    private static final String SET_CLAUSE = "SetClause";
+    private static final String SET_LIST = "SetList";
+    private static final String SET_LIST_TAIL = "SetListTail";
+    private static final String SET_ITEM = "SetItem";
     private static final String VAL_LIST = "ValList";
     private static final String VAL_LIST_TAIL = "ValListTail";
 
@@ -175,6 +182,15 @@ public class SQLParser {
                         matchedValue = "DELETE";
                         // 开始构建DELETE节点
                         astStack.push(new DeleteNode());
+                    } else if (top.equals("UPDATE") && currentToken.getValue().equalsIgnoreCase("UPDATE")) {
+                        matched = true;
+                        matchedValue = "UPDATE";
+                        // 开始构建UPDATE节点
+                        astStack.push(new UpdateNode());
+                    } else if (top.equals("SET") && currentToken.getValue().equalsIgnoreCase("SET")) {
+                        matched = true;
+                        matchedValue = "SET";
+                        astStack.push("SET");
                     } else if (top.equals("FROM") && currentToken.getValue().equalsIgnoreCase("FROM")) {
                         matched = true;
                         matchedValue = "FROM";
@@ -553,6 +569,8 @@ public class SQLParser {
                 symbol.equals("INSERT") ||
                 symbol.equals("INTO") ||
                 symbol.equals("VALUES") ||
+                symbol.equals("UPDATE") ||
+                symbol.equals("SET") ||
                 symbol.equals("DELETE") ||
                 symbol.equals("FROM") ||
                 symbol.equals("WHERE") ||
@@ -602,6 +620,7 @@ public class SQLParser {
                         (tokenValue.equalsIgnoreCase("SELECT") ||
                                 tokenValue.equalsIgnoreCase("CREATE") ||
                                 tokenValue.equalsIgnoreCase("INSERT") ||
+                                tokenValue.equalsIgnoreCase("UPDATE") ||
                                 tokenValue.equalsIgnoreCase("DELETE"))) {
                     return "Stmt ;";
                 }
@@ -614,6 +633,8 @@ public class SQLParser {
                     return "CreateTable";
                 } else if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("INSERT")) {
                     return "Insert";
+                } else if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("UPDATE")) {
+                    return "Update";
                 } else if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("DELETE")) {
                     return "Delete";
                 }
@@ -640,6 +661,31 @@ public class SQLParser {
             case DELETE:
                 if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("DELETE")) {
                     return "DELETE FROM Tbl WhereClause";
+                }
+                break;
+
+            case "Update":
+                if (tokenType.equals("KEYWORD") && tokenValue.equalsIgnoreCase("UPDATE")) {
+                    return "UPDATE Tbl SET SetList WhereClause";
+                }
+                break;
+
+            case "SetList":
+                if (tokenType.equals("IDENTIFIER")) {
+                    return "SetItem SetListTail";
+                }
+                break;
+
+            case "SetListTail":
+                if (tokenType.equals("DELIMITER") && tokenValue.equals(",")) {
+                    return ", SetItem SetListTail";
+                } else {
+                    return "ε"; // 空产生式
+                }
+
+            case "SetItem":
+                if (tokenType.equals("IDENTIFIER")) {
+                    return "ID = Value";
                 }
                 break;
 
@@ -913,7 +959,7 @@ public class SQLParser {
                 while (!astStack.isEmpty()) {
                     Object element = astStack.pop();
                     if (element instanceof SelectNode || element instanceof CreateTableNode || 
-                        element instanceof InsertNode || element instanceof DeleteNode) {
+                        element instanceof InsertNode || element instanceof UpdateNode || element instanceof DeleteNode) {
                         rootNode = element;
                         break;
                     }
@@ -1173,6 +1219,66 @@ public class SQLParser {
                     deleteNode.whereClause = whereClause;
                     
                     astStack.push(deleteNode);
+                }
+                else if (rootNode instanceof UpdateNode) {
+                    UpdateNode updateNode = (UpdateNode) rootNode;
+                    
+                    // 解析UPDATE的元素
+                    String tableName = "";
+                    Map<String, Object> setValues = new HashMap<>();
+                    ExpressionNode whereClause = null;
+                    
+                    // 智能解析：基于SQL语法结构来识别不同部分
+                    List<String> stringElements = new ArrayList<>();
+                    for (Object element : elements) {
+                        if (element instanceof String) {
+                            String str = (String) element;
+                            if (!str.contains("_START")) { // 忽略标记
+                                stringElements.add(str);
+                            }
+                        } else if (element instanceof ExpressionNode) {
+                            whereClause = (ExpressionNode) element;
+                        }
+                    }
+                    
+                    // 基于SQL语法来解析字符串元素
+                    // SQL结构: UPDATE table SET column=value [, column=value] [WHERE condition]
+                    boolean foundSet = false;
+                    boolean foundWhere = false;
+                    String currentColumn = null;
+                    
+                    for (int i = 0; i < stringElements.size(); i++) {
+                        String str = stringElements.get(i);
+                        
+                        if (str.equalsIgnoreCase("SET")) {
+                            foundSet = true;
+                        } else if (str.equalsIgnoreCase("WHERE")) {
+                            foundWhere = true;
+                            break; // WHERE之后的处理由ExpressionNode完成
+                        } else if (!foundSet && tableName.isEmpty()) {
+                            // SET之前的第一个标识符是表名
+                            tableName = str;
+                        } else if (foundSet && !foundWhere) {
+                            // SET之后的部分解析为 column=value 对
+                            if (currentColumn == null) {
+                                currentColumn = str; // 列名
+                            } else if (i + 1 < stringElements.size() && 
+                                     stringElements.get(i).equals("=")) {
+                                // 跳过=号，下一个是值
+                                continue;
+                            } else {
+                                // 这是值
+                                setValues.put(currentColumn, str);
+                                currentColumn = null; // 重置以处理下一个列值对
+                            }
+                        }
+                    }
+                    
+                    updateNode.tableName = tableName;
+                    updateNode.setValues = setValues;
+                    updateNode.whereClause = whereClause;
+                    
+                    astStack.push(updateNode);
                 }
                 // 可以添加其他节点类型的处理逻辑
             }

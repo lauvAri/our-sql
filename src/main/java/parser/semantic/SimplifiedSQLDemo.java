@@ -17,13 +17,14 @@ public class SimplifiedSQLDemo {
             EnhancedMockCatalogAdapter mockCatalog = new EnhancedMockCatalogAdapter();
             SQLCompiler compiler = new SQLCompiler(mockCatalog);
             
-            // 测试支持的SQL语句（包括ORDER BY和LIMIT）
+            // 测试支持的SQL语句（包括ORDER BY、LIMIT和UPDATE）
             String[] testSQLs = {
                 "CREATE TABLE users(id INT, username VARCHAR(50), email VARCHAR(100));",
                 "INSERT INTO users (id, username, email) VALUES (1, 'john_doe', 'john@example.com');",
                 "SELECT username, email FROM users WHERE id > 0;",
                 "SELECT * FROM users ORDER BY username ASC;",
                 "SELECT * FROM users ORDER BY id DESC LIMIT 10;",
+                "UPDATE users SET email = 'john.doe@newdomain.com' WHERE id = 1;",
                 "DELETE FROM users WHERE id = 1;",
                 "CREATE TABLE products(pid INT, name VARCHAR(100), price VARCHAR(20));"
             };
@@ -81,6 +82,15 @@ public class SimplifiedSQLDemo {
                             System.out.println("   删除表: " + deletePlan.getTableName());
                             if (deletePlan.getFilter() != null) {
                                 System.out.println("   删除条件: " + deletePlan.getFilter());
+                            }
+                            break;
+                            
+                        case UPDATE:
+                            UpdatePlan updatePlan = (UpdatePlan) plan;
+                            System.out.println("   更新表: " + updatePlan.getTableName());
+                            System.out.println("   更新值: " + updatePlan.getSetValues());
+                            if (updatePlan.getFilter() != null) {
+                                System.out.println("   更新条件: " + updatePlan.getFilter());
                             }
                             break;
                             

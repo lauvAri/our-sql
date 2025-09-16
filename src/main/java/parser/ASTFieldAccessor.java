@@ -121,4 +121,20 @@ public class ASTFieldAccessor {
     public static String getColumnDefinitionDataType(Object colDef) {
         return (String) getField(colDef, "dataType");
     }
+    
+    /**
+     * 获取UpdateNode的字段
+     */
+    public static String getUpdateTableName(ASTNode node) {
+        return (String) getField(node, "tableName");
+    }
+    
+    @SuppressWarnings("unchecked")
+    public static java.util.Map<String, Object> getUpdateSetValues(ASTNode node) {
+        return (java.util.Map<String, Object>) getField(node, "setValues");
+    }
+    
+    public static Object getUpdateWhereClause(ASTNode node) {
+        return getField(node, "whereClause");
+    }
 }

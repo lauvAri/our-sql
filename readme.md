@@ -1,5 +1,7 @@
 # our-sql
 
+![oursql](assets/oursql.png)
+
 这是一个综合操作系统、编译原理和数据库系统的项目
 
 ## 项目结构

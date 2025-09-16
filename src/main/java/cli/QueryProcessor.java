@@ -115,6 +115,8 @@ public class QueryProcessor {
                     System.out.println("   查询表: " + selectPlan.getTableName());
                     System.out.println("   选择列: " + selectPlan.getColumns());
                     ExecutionResult result = engine.execute(selectPlan);
+                    //System.out.println(new QueryResult(true, result.toString()).toString());
+
                     return new QueryResult(true, result.getData().toString());
 
                 case INSERT:

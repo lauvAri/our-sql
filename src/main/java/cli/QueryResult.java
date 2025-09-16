@@ -33,4 +33,14 @@ public class QueryResult {
     public List<String> getColumnNames() { return columnNames; }
     public List<List<Object>> getRows() { return rows; }
     public boolean isSuccess() { return isSuccess; }
+
+    @Override
+    public String toString() {
+        return "QueryResult{" +
+                "message='" + message + '\'' +
+                ", columnNames=" + columnNames +
+                ", rows=" + rows +
+                ", isSuccess=" + isSuccess +
+                '}';
+    }
 }

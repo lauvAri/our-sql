@@ -162,7 +162,7 @@ public class StoreManager {
         }
     }
 
-    private void loadAllTables() {
+    public void loadAllTables() {
         Table table = loadTable(SystemCatalog.CATALOG_TABLE_NAME);
         tables.put(SystemCatalog.CATALOG_TABLE_NAME, table);
 //        if (table != null) {

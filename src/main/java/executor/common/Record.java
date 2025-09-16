@@ -3,7 +3,9 @@ package executor.common;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 记录
@@ -35,6 +37,23 @@ public record Record(Map<String, Object> fields) {
             );
         }
         return (String) value;
+    }
+
+    /**
+     * 从另一个记录更新字段值（创建新Record实例）
+     * @param newRecord 提供新字段值的记录
+     * @return 包含合并后字段的新Record
+     */
+    public Record updateFrom(Record newRecord) {
+        Objects.requireNonNull(newRecord, "New record cannot be null");
+
+        // 创建字段的深拷贝（避免修改原始Map）
+        Map<String, Object> mergedFields = new HashMap<>(this.fields);
+
+        // 用新值覆盖旧值
+        mergedFields.putAll(newRecord.fields());
+
+        return new Record(mergedFields);
     }
 
     @JsonIgnore

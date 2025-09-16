@@ -61,6 +61,43 @@ public class InMemoryTable implements Table {
     }
 
     @Override
+    public void update(Record record, Record newRecord) {
+        Objects.requireNonNull(record);
+        Objects.requireNonNull(newRecord);
+
+        // 验证新记录是否符合表结构
+        if (!schema.validate(newRecord)) {
+            throw new IllegalArgumentException("New record doesn't match table schema");
+        }
+
+        synchronized (records) {
+            // 检查记录是否存在（可选，根据需求决定是否需要）
+            if (!records.contains(record)) {
+                throw new IllegalArgumentException("Record not found in table");
+            }
+
+            // 更新前从索引中移除旧记录
+            indexes.values().forEach(index -> index.onDelete(record));
+
+            // 更新记录内容
+            boolean removed = records.remove(record);
+            if (!removed) {
+                throw new IllegalArgumentException("Old record not found in the table");
+            }
+
+            // Add the new record
+            records.add(newRecord);
+
+            // 注意：这里假设Record是可变的，如果不可变需要先删除再添加
+            newRecord = record.updateFrom(newRecord);
+
+            // 将更新后的记录重新加入索引
+            Record finalNewRecord = newRecord;
+            indexes.values().forEach(index -> index.onInsert(finalNewRecord));
+        }
+    }
+
+    @Override
     public void delete(Predicate<Record> condition) {
         Objects.requireNonNull(condition);
 

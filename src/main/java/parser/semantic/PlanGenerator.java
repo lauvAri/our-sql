@@ -43,6 +43,9 @@ public class PlanGenerator {
                 case "DELETE":
                     plan = generateDeletePlan(ast);
                     break;
+                case "UPDATE":
+                    plan = generateUpdatePlan(ast);
+                    break;
                 case "CREATE_INDEX":
                     plan = generateCreateIndexPlan(ast);
                     break;
@@ -237,6 +240,41 @@ public class PlanGenerator {
         }
         
         return new DeletePlan(tableName, filter);
+    }
+    
+    /**
+     * 生成UPDATE执行计划
+     */
+    private LogicalPlan generateUpdatePlan(ASTNode ast) {
+        String tableName = ASTFieldAccessor.getUpdateTableName(ast);
+        Map<String, Object> setValues = ASTFieldAccessor.getUpdateSetValues(ast);
+        Object whereClause = ASTFieldAccessor.getUpdateWhereClause(ast);
+        
+        // 检查表是否存在
+        if (!catalog.tableExists(tableName)) {
+            addError(SemanticError.ErrorType.TABLE_NOT_FOUND, "UPDATE", 
+                   "表 '" + tableName + "' 不存在");
+            return null;
+        }
+        
+        TableMetadata table = catalog.getTable(tableName);
+        
+        // 验证SET子句中的列是否存在
+        for (String columnName : setValues.keySet()) {
+            if (!table.hasColumn(columnName)) {
+                addError(SemanticError.ErrorType.COLUMN_NOT_FOUND, "UPDATE SET", 
+                       "表 '" + tableName + "' 中不存在列 '" + columnName + "'");
+                return null;
+            }
+        }
+        
+        // 处理WHERE子句
+        Expression filter = null;
+        if (whereClause != null) {
+            filter = buildExpression(whereClause, table);
+        }
+        
+        return new UpdatePlan(tableName, setValues, filter);
     }
     
     /**

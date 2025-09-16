@@ -1,6 +1,8 @@
 package parser;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import executor.common.orderby.OrderByClause;
 
 // AST节点基类
@@ -94,6 +96,24 @@ class DeleteNode extends ASTNode {
     public String toString() {
         return String.format("DELETE FROM %s WHERE %s",
                 tableName, whereClause != null ? whereClause.toString() : "NULL");
+    }
+}
+
+// UPDATE语句节点
+class UpdateNode extends ASTNode {
+    public String tableName;
+    public Map<String, Object> setValues;  // 要更新的列和值的映射
+    public ExpressionNode whereClause;
+
+    public UpdateNode() {
+        this.type = "UPDATE";
+        this.setValues = new HashMap<>();
+    }
+
+    @Override
+    public String toString() {
+        return String.format("UPDATE %s SET %s WHERE %s",
+                tableName, setValues, whereClause != null ? whereClause.toString() : "NULL");
     }
 }
 

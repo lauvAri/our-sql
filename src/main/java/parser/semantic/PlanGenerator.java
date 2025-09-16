@@ -85,11 +85,21 @@ public class PlanGenerator {
         
         TableMetadata table = catalog.getTable(tableName);
         
-        // 检查列是否存在
+        // 处理SELECT *的情况，将*展开为实际的列名
+        List<String> actualColumns = new ArrayList<>();
         for (String column : columns) {
-            if (!column.equals("*") && !table.hasColumn(column)) {
-                addError(SemanticError.ErrorType.COLUMN_NOT_FOUND, "SELECT", 
-                       "列 '" + column + "' 在表 '" + tableName + "' 中不存在");
+            if (column.equals("*")) {
+                // 展开*为表的所有列
+                for (ColumnMetadata columnMeta : table.getColumns()) {
+                    actualColumns.add(columnMeta.getColumnName());
+                }
+            } else {
+                // 检查普通列是否存在
+                if (!table.hasColumn(column)) {
+                    addError(SemanticError.ErrorType.COLUMN_NOT_FOUND, "SELECT", 
+                           "列 '" + column + "' 在表 '" + tableName + "' 中不存在");
+                }
+                actualColumns.add(column);
             }
         }
         
@@ -102,18 +112,18 @@ public class PlanGenerator {
         // 创建SelectPlan，根据是否有ORDER BY和LIMIT使用不同的构造函数
         if (orderByClause != null && limitValue != null && limitValue > 0) {
             // 有ORDER BY和LIMIT
-            return new SelectPlan(tableName, columns, filter, 
+            return new SelectPlan(tableName, actualColumns, filter, 
                                 (executor.common.orderby.OrderByClause) orderByClause, limitValue);
         } else if (orderByClause != null) {
             // 只有ORDER BY
-            return new SelectPlan(tableName, columns, filter, 
+            return new SelectPlan(tableName, actualColumns, filter, 
                                 (executor.common.orderby.OrderByClause) orderByClause);
         } else if (limitValue != null && limitValue > 0) {
             // 只有LIMIT
-            return new SelectPlan(tableName, columns, filter, limitValue);
+            return new SelectPlan(tableName, actualColumns, filter, limitValue);
         } else {
             // 基本SELECT
-            return new SelectPlan(tableName, columns, filter);
+            return new SelectPlan(tableName, actualColumns, filter);
         }
     }
     

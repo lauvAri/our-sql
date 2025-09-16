@@ -1,0 +1,63 @@
+@font-face {
+  font-family: "minecraft";
+  src: url('/font/MINECRAFT_PE.ttf');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "led";
+  src: url('/font/The-Led-Display-St.ttf');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "arcade";
+  src: url('/font/ARCADECLASSIC.TTF');
+  font-weight: normal;
+  font-style: normal;
+}
+
+html,
+body {
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+#terminal-container {
+  width: auto;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0;
+  .terminal {
+    padding: 5px;
+    height: calc(100% - 10px);
+  }
+}
+
+.header {
+  flex-shrink: 0;
+  font-family: "consolas";
+  font-size: x-large;
+  color: #8be9fd;
+  text-align: center;
+  padding: 2rem;
+  font-weight: bold;
+  background-color: #1a102c;
+
+  a {
+    color: #8be9fd;
+    font-family: 'minecraft';
+  }
+}
+
+.title {
+  font-family: 'led';
+}
+
+code {
+  font-family: 'arcade';
+}

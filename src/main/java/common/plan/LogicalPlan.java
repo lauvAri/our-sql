@@ -6,6 +6,7 @@ public abstract class LogicalPlan {
         INSERT,
         SELECT,
         DELETE,
+        UPDATE,
         CREATE_INDEX,
         DROP_INDEX,
     }

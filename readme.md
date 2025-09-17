@@ -34,7 +34,7 @@ mvn clean package # 构建项目
 java -jar ./target/our-sql-1.0-SNAPSHOT.jar # 运行项目
 ```
 
-接下来你会进入一个以`oursql> `开头的交互式命令行，你可以在里面测试<a href="#sql">sql语句</a>
+接下来你会进入一个以`oursql> `开头的交互式命令行，你可以在里面测试[sql语句](testcase.md)
 
 如果你使用Linux发行版，你可以进入`scripts/`查看启动脚本
 

@@ -29,19 +29,27 @@ mvn clean package # 构建项目
 java -jar ./target/our-sql-1.0-SNAPSHOT.jar # 运行项目
 ```
 
-接下来你会进入一个以"oursql>"开头的交互式命令行，你可以在里面测试<a href="#sql">sql语句</a>
+接下来你会进入一个以`oursql> `开头的交互式命令行，你可以在里面测试<a href="#sql">sql语句</a>
 
 如果你使用Linux发行版，你可以进入`scripts/`查看启动脚本
+
+![cli](assets/cli.png)
 
 ### 构建前端工程
 
 ```bash
 cd html
-npm i # 如果你的网络条件不够好，你可以先通过 npm install -g nrm ，再通过 nrm 管理镜像，推荐使用tencent或者taobao镜像
+npm i # 如果你的网络条件不够好，你可以先通过 npm install -g nrm 安装镜像管理器，再通过 nrm 管理镜像，推荐使用tencent或者taobao镜像
 npm run start
 ```
 
-访问 http://localhost:9000 查看网页, 接下来，可以使用[ttyd](https://github.com/tsl0922/ttyd)构建服务端，你可以在参考[`scripts/run.sh`](https://github.com/lauvAri/our-sql/blob/master/scripts/run.sh)的启动参数，现在网页端就可以通过websocket与服务端进行通信了
+访问 http://localhost:9000 查看网页, 接下来，可以使用[ttyd](https://github.com/tsl0922/ttyd)构建服务端，你可以在参考[`scripts/run.sh`](scripts/run.sh)的启动参数，现在网页端就可以通过websocket与服务端进行通信了
+
+启动服务器
+
+![server](assets/server.png)
+
+![网页展示](assets/oursql-full.png)
 
 ## 分支协作
 
@@ -58,6 +66,64 @@ npm run start
 
 支持的基础SQL语句包括： <code>create table</code>, <code>insert into</code>, <code>select from</code>, <code>delete from</code>；高级SQL语句包括：<code>show tables</code>, <code>update</code>, <code>limit</code>, <code>order by</code>
 
+### 项目支持的特性包括：
 
 
+#### SQL编译器
+
+- 词法分析器
+    - 支持识别SQL关键字(SELECT, FROM, WHERE, CREATE TABLE, INSERT INTO, DELETE，UPDATE, LIMIT等)
+    - 支持识别标识符、常量、运算符、分割符
+    - 输出token格式 [种别码，词素值，行号，列号]
+    - 支持错误提示（非法字符、位置）
+- 语法分析器
+    - 构建抽象语法树AST
+    - 语法错误提示（位置 + 期望符号）
+- 语义分析
+    - 表/列存在性检测
+    - 类型一致性检测
+    - 维护系统目录
+    - 错误输出格式：[错误类型，位置，原因]
+- 执行计划生成器
+    - 将AST转为执行计划
+    - 支持算子：CREATE TABLE, INSERT, PROJECT, FILTER, SQLSCAN
+    - 输出格式：JSON表达式
+
+#### 操作系统页面管理
+
+- 页式存储系统
+    - 页大小固定为8KB
+    - 支持页的分配、释放、读写
+    - 提供读写接口
+- 缓存机制
+    - 实现页缓存（LRU策略， Least Recently Used）
+    - 缓存命中、替换统计
+    - 提供读写接口
+    - 预读机制
+- 接口与集成
+    - 通过`src/main/java/store/StoreManager.java`提供统一接口
+- 序列化与反序列化
+    - 使用`BufferedInputStream`和`BufferedOutPutStream`进行IO缓冲
+    - 使用`parallelStream()`进行多线程并行IO
+- 持久化数据管理
+    - 所有的数据均存储在`~/.oursql/`下
+    - 数据文件位于`~/.oursql/data/`下，schema文件位于`~/.oursql/schema`下，索引文件位于`~/.oursql/idx`下
+    - 历史命令存储在`~/.oursql_history`文件中
+
+#### 数据库系统
+
+- 执行引擎
+    - 支持算子：CREATE TABLE, INSERT, SEQSCAN, FILTER, PROJECT
+    - 支持条件查询（WHERE）
+- 系统目录
+    - 维护系统元数据
+    - 目录本身作为一张表存储`sys_catalog`
+- 用户接口
+    - 支持Web端
+    - 支持交互式命令行
+    - 命令支持历史记录和TAB补全
+- 测试
+    - 支持通过shell脚本进行功能测试和性能测试
+- 查询优化
+    - 谓词下推
 

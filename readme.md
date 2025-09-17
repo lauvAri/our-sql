@@ -1,5 +1,10 @@
 # our-sql
 
+![Java](https://img.shields.io/badge/Java-007396?style=for-the-badge&logo=java&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Gulp](https://img.shields.io/badge/Gulp-CF4647?style=for-the-badge&logo=gulp&logoColor=white)
+![Webpack](https://img.shields.io/badge/Webpack-8DD6F9?style=for-the-badge&logo=webpack&logoColor=black)
+
 ![oursql](assets/oursql.png)
 
 这是一个综合操作系统、编译原理和数据库系统的项目
@@ -65,6 +70,10 @@ npm run start
 该项目由三个大模块组成，包括SQL编译器、SQL执行器以及SQL存储器，涉及的专业知识包括：编译原理、数据库系统概念、操作系统原理。
 
 支持的基础SQL语句包括： <code>create table</code>, <code>insert into</code>, <code>select from</code>, <code>delete from</code>；高级SQL语句包括：<code>show tables</code>, <code>update</code>, <code>limit</code>, <code>order by</code>
+
+### 性能测试
+
+![benchmark](assets/benchmark.png)
 
 ### 项目支持的特性包括：
 

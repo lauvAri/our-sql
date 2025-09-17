@@ -44,10 +44,10 @@ public class Main {
 //        // 使用 StorageService 初始化
 //        StorageService storageService = new StorageService("main.db", "main.idx");
         QueryProcessor queryProcessor = new QueryProcessor();
-        ConcurrentHashMap<String, Table> tables = new ConcurrentHashMap<>();
-        ConcurrentHashMap<String, TableSchema> schemas = new ConcurrentHashMap<>();
+//        ConcurrentHashMap<String, Table> tables = new ConcurrentHashMap<>();
+//        ConcurrentHashMap<String, TableSchema> schemas = new ConcurrentHashMap<>();
 
-        StoreManager storeManager = new StoreManager(tables, schemas);
+        StoreManager storeManager = new StoreManager();
         StorageEngine storageEngine = new StorageEngineImpl(storeManager);
 
         ExecutionEngine executionEngine = new ExecutionEngine(storageEngine);

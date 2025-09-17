@@ -42,10 +42,10 @@ public class SQLTest {
 
 //        MyStorageService myStorageService = new MyStorageService();
 //        StorageEngine storageEngine = new StorageEngineImpl(myStorageService);
-        ConcurrentHashMap<String, Table> tables = new ConcurrentHashMap<>();
-        ConcurrentHashMap<String, TableSchema> schemas = new ConcurrentHashMap<>();
+//        ConcurrentHashMap<String, Table> tables = new ConcurrentHashMap<>();
+//        ConcurrentHashMap<String, TableSchema> schemas = new ConcurrentHashMap<>();
 
-        StoreManager storeManager = new StoreManager(tables, schemas);
+        StoreManager storeManager = new StoreManager();
         StorageEngine storageEngine = new StorageEngineImpl(storeManager);
 
         ExecutionEngine executionEngine = new ExecutionEngine(storageEngine);

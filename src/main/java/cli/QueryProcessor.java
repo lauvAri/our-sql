@@ -225,7 +225,7 @@ public class QueryProcessor {
     }
 
     private static List<List<Object>> getRecords(ExecutionResult result, List<String> columnNames) {
-        ArrayList<executor.common.Record> records = (ArrayList<executor.common.Record>)(result.getData());
+        List<executor.common.Record> records = (List<executor.common.Record>) result.getData();
         List<List<Object>> results = new ArrayList<>();
         for (executor.common.Record record : records) {
             ArrayList<Object> row = new ArrayList<>();

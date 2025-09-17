@@ -4,21 +4,22 @@ import common.plan.*;
 import java.util.*;
 
 /**
- * 简化的SQL编译器演示，使用模拟的目录适配器
- * 避免复杂的存储引擎初始化问题
+ * 完整的SQL编译器演示
+ * 直接调用SQLCompiler.compile()方法展示详细的编译过程
  */
 public class SimplifiedSQLDemo {
     
     public static void main(String[] args) {
         try {
-            System.out.println("=== 简化的SQL编译器通用接口演示 ===\n");
+            System.out.println("=== 完整SQL编译器演示（集成详细编译过程） ===\n");
             
             // 使用增强的模拟目录适配器
             EnhancedMockCatalogAdapter mockCatalog = new EnhancedMockCatalogAdapter();
             SQLCompiler compiler = new SQLCompiler(mockCatalog);
             
-            // 测试支持的SQL语句（包括ORDER BY、LIMIT、UPDATE和SELECT *展开）
+            // 测试用例：包括正确和错误的SQL语句
             String[] testSQLs = {
+                // 正确的SQL语句
                 "CREATE TABLE users(id INT, username VARCHAR(50), email VARCHAR(100));",
                 "INSERT INTO users (id, username, email) VALUES (1, 'john_doe', 'john@example.com');",
                 "SELECT username, email FROM users WHERE id > 0;",
@@ -28,7 +29,13 @@ public class SimplifiedSQLDemo {
                 "SELECT * FROM users ORDER BY id DESC LIMIT 10;",
                 "UPDATE users SET email = 'john.doe@newdomain.com' WHERE id = 1;",
                 "DELETE FROM users WHERE id = 1;",
-                "CREATE TABLE products(pid INT, name VARCHAR(100), price VARCHAR(20));"
+                
+                // 错误测试用例
+                "CREATE TABLE users(id INT, username VARCHAR(50), email VARCHAR(100))",  // 缺分号
+                "SELECT * FROM nonexistent_table;",  // 表不存在
+                "SELECT nonexistent_column FROM users;",  // 列不存在
+                "INSERT INTO users (id, username) VALUES (1);",  // 列数不匹配
+                "SELECT * FROM users WHERE invalidcolumn = 1;"  // 无效列名
             };
             
             System.out.println("📝 测试" + testSQLs.length + "个SQL语句：\n");
@@ -36,24 +43,21 @@ public class SimplifiedSQLDemo {
             // 逐个测试SQL语句
             for (int i = 0; i < testSQLs.length; i++) {
                 String sql = testSQLs[i];
+                System.out.println("=" + repeat("=", 80));
                 System.out.println("测试第" + (i + 1) + "个SQL语句:");
                 System.out.println("SQL: " + sql);
+                System.out.println("=" + repeat("=", 80));
                 
                 try {
-                    // 使用通用编译接口
+                    // 直接调用SQLCompiler的compile方法，它会自动输出详细的编译过程
                     LogicalPlan plan = compiler.compile(sql);
                     
-                    System.out.println("✅ 编译成功!");
-                    System.out.println("   操作类型: " + plan.getOperatorType());
-                    
-                    // 根据类型显示详细信息
-                    switch (plan.getOperatorType()) {
-                        case CREATE_TABLE:
+                    if (plan != null) {
+                        System.out.println("🎉 编译完成！最终执行计划类型: " + plan.getOperatorType());
+                        
+                        // 如果是CREATE TABLE，注册表到目录中
+                        if (plan instanceof CreateTablePlan) {
                             CreateTablePlan createPlan = (CreateTablePlan) plan;
-                            System.out.println("   表名: " + createPlan.getTableName());
-                            System.out.println("   列数: " + createPlan.getColumns().size());
-                            
-                            // 将CreateTablePlan的列定义转换为ColumnMetadata
                             List<ColumnMetadata> columnMetadataList = new ArrayList<>();
                             for (var column : createPlan.getColumns()) {
                                 String name = column.getName();
@@ -61,107 +65,71 @@ public class SimplifiedSQLDemo {
                                 int size = column.getLength() > 0 ? column.getLength() : getDefaultColumnSize(dataType);
                                 columnMetadataList.add(new ColumnMetadata(name, dataType, false, column.isPrimaryKey(), size));
                             }
-                            
-                            // 注册表及其列信息到目录中
                             mockCatalog.addTable(createPlan.getTableName(), columnMetadataList);
-                            System.out.println("   ✅ 已注册表到目录中");
-                            break;
-                            
-                        case SELECT:
-                            SelectPlan selectPlan = (SelectPlan) plan;
-                            System.out.println("   查询表: " + selectPlan.getTableName());
-                            System.out.println("   选择列: " + selectPlan.getColumns());
-                            break;
-                            
-                        case INSERT:
-                            InsertPlan insertPlan = (InsertPlan) plan;
-                            System.out.println("   插入表: " + insertPlan.getTableName());
-                            System.out.println("   插入值: " + insertPlan.getValues());
-                            break;
-                            
-                        case DELETE:
-                            DeletePlan deletePlan = (DeletePlan) plan;
-                            System.out.println("   删除表: " + deletePlan.getTableName());
-                            if (deletePlan.getFilter() != null) {
-                                System.out.println("   删除条件: " + deletePlan.getFilter());
-                            }
-                            break;
-                            
-                        case UPDATE:
-                            UpdatePlan updatePlan = (UpdatePlan) plan;
-                            System.out.println("   更新表: " + updatePlan.getTableName());
-                            System.out.println("   更新值: " + updatePlan.getSetValues());
-                            if (updatePlan.getFilter() != null) {
-                                System.out.println("   更新条件: " + updatePlan.getFilter());
-                            }
-                            break;
-                            
-                        case CREATE_INDEX:
-                        case DROP_INDEX:
-                            System.out.println("   索引操作（暂不详细展示）");
-                            break;
+                            System.out.println("✅ 表已成功注册到系统目录");
+                        }
                     }
                     
                 } catch (SQLCompilerException e) {
                     System.out.println("❌ 编译失败: " + e.getMessage());
-                    
-                    // 添加更深入的错误分析
-                    System.out.println("🔍 深度错误分析:");
-                    try {
-                        // 1. 测试词法分析
-                        parser.SQLLexer lexer = new parser.SQLLexer(sql);
-                        System.out.println("   ✅ 词法分析成功");
-                        
-                        // 2. 测试语法分析
-                        parser.SQLParser parser = new parser.SQLParser(lexer.getAllTokens());
-                        parser.ASTNode ast = parser.parse();
-                        if (ast != null) {
-                            System.out.println("   ✅ 语法分析成功 - AST类型: " + ast.getClass().getSimpleName());
-                            
-                            // 3. 测试语义分析器
-                            parser.semantic.EnhancedSemanticAnalyzer analyzer = compiler.getSemanticAnalyzer();
-                            parser.semantic.AnalysisResult result = analyzer.analyzeSemantics(ast);
-                            
-                            if (result.isSuccess()) {
-                                System.out.println("   ✅ 语义分析成功");
-                            } else {
-                                System.out.println("   ❌ 语义分析失败");
-                                if (result.getErrors() != null && !result.getErrors().isEmpty()) {
-                                    System.out.println("   详细错误: " + result.getErrors());
-                                } else {
-                                    System.out.println("   错误信息为空，但分析失败");
-                                }
-                                System.out.println("   完整错误报告:");
-                                System.out.println(result.getFormattedResult());
-                            }
-                        } else {
-                            System.out.println("   ❌ 语法分析失败 - AST为null");
-                        }
-                    } catch (Exception ex) {
-                        System.out.println("   ❌ 分析过程异常: " + ex.getMessage());
-                        ex.printStackTrace();
-                    }
+                } catch (Exception e) {
+                    System.out.println("❌ 编译过程异常: " + e.getMessage());
+                    e.printStackTrace();
                 }
                 
-                System.out.println(repeat("-", 60));
+                System.out.println("\n");
             }
             
-            System.out.println("\n🎯 核心改进总结:");
-            System.out.println("1. ✅ 使用通用的 compiler.compile(sql) 方法");
-            System.out.println("2. ✅ 自动识别SQL类型，无需预先知道");
-            System.out.println("3. ✅ 根据 LogicalPlan 类型进行相应处理");
-            System.out.println("4. ✅ 解决了存储引擎初始化问题");
-            System.out.println("5. ✅ 修复了不支持的数据类型问题");
+            System.out.println("\n🎯 SQL编译器功能总结:");
+            System.out.println("✅ 词法分析: 输出Token[种别码, 词素值, 行号, 列号]格式");
+            System.out.println("✅ 语法分析: 输出四元式[步骤，[语法栈]，（输入串），表达式]格式，包含错误处理");
+            System.out.println("✅ 语义分析: 输出四元式[op, arg1, arg2, result]格式");
+            System.out.println("✅ 执行计划: 生成完整的LogicalPlan对象");
+            System.out.println("✅ SELECT *展开: 自动将*展开为实际列名");
+            System.out.println("✅ ORDER BY/LIMIT: 支持排序和限制功能");
+            System.out.println("✅ 错误处理: 精确的错误定位和详细报告");
             
-            System.out.println("\n🔧 使用方式改进:");
-            System.out.println("❌ 旧方式: compiler.compileCreateTable(sql) // 需要预知类型");
-            System.out.println("✅ 新方式: compiler.compile(sql) // 通用接口");
-            
-            System.out.println("\n🎉 现在您的SQL编译器可以处理真实场景中的未知类型SQL语句了！");
+            System.out.println("\n� 使用方式:");
+            System.out.println("现在执行器只需调用 compiler.compile(sql) 即可看到完整的编译过程！");
             
         } catch (Exception e) {
             System.err.println("❌ 演示失败: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+    
+    /**
+     * 获取数据类型的默认大小
+     */
+    private static int getDefaultColumnSize(String dataType) {
+        switch (dataType.toUpperCase()) {
+            case "INT":
+            case "INTEGER":
+                return 4;
+            case "BIGINT":
+                return 8;
+            case "SMALLINT":
+                return 2;
+            case "TINYINT":
+                return 1;
+            case "FLOAT":
+                return 4;
+            case "DOUBLE":
+                return 8;
+            case "BOOLEAN":
+                return 1;
+            case "DATE":
+                return 4;
+            case "TIMESTAMP":
+                return 8;
+            case "VARCHAR":
+                return 255; // 默认VARCHAR大小
+            case "CHAR":
+                return 1;
+            case "TEXT":
+                return 65535;
+            default:
+                return 50; // 未知类型默认大小
         }
     }
     
@@ -174,28 +142,5 @@ public class SimplifiedSQLDemo {
             sb.append(str);
         }
         return sb.toString();
-    }
-    
-    /**
-     * 获取数据类型的默认大小
-     */
-    private static int getDefaultColumnSize(String dataType) {
-        if (dataType.equalsIgnoreCase("INT")) {
-            return 4;
-        } else if (dataType.toUpperCase().startsWith("VARCHAR")) {
-            // 从VARCHAR(n)中提取n，如果没有则返回默认值
-            if (dataType.contains("(") && dataType.contains(")")) {
-                try {
-                    String sizeStr = dataType.substring(dataType.indexOf("(") + 1, dataType.indexOf(")"));
-                    return Integer.parseInt(sizeStr);
-                } catch (Exception e) {
-                    return 255; // 默认VARCHAR大小
-                }
-            } else {
-                return 255; // 默认VARCHAR大小
-            }
-        } else {
-            return 100; // 其他类型的默认大小
-        }
     }
 }

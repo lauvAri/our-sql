@@ -76,6 +76,24 @@ public class SQLParser {
         parseStack.push("$"); // 结束符号
         parseStack.push(PROG); // 开始符号
     }
+    
+    // 输出语法分析四元式：[步骤，[语法栈]，（输入串），表达式]
+    private void outputParseStep(String action) {
+        String stackContent = parseStack.toString();
+        String inputString = getRemainingInput();
+        System.out.println("  步骤[" + step + "]: [" + step + ", " + stackContent + ", (" + inputString + "), " + action + "]");
+        step++;
+    }
+    
+    // 获取剩余输入串
+    private String getRemainingInput() {
+        StringBuilder remaining = new StringBuilder();
+        for (int i = currentTokenIndex; i < tokens.size(); i++) {
+            if (remaining.length() > 0) remaining.append(" ");
+            remaining.append(tokens.get(i).getValue());
+        }
+        return remaining.toString();
+    }
 
     // 获取当前Token
     private Token getCurrentToken() {
@@ -139,8 +157,11 @@ public class SQLParser {
 
     // 语法分析入口
     public ASTNode parse() {
+        System.out.println("🎯 语法分析四元式输出格式: [步骤，[语法栈]，（输入串），表达式]");
+        
         output.append("开始语法分析:\n");
         recordStep("开始");
+        outputParseStep("初始化");
 
         while (!parseStack.isEmpty()) {
             String top = parseStack.peek();
@@ -156,35 +177,43 @@ public class SQLParser {
                     if (top.equals("SELECT") && currentToken.getValue().equalsIgnoreCase("SELECT")) {
                         matched = true;
                         matchedValue = "SELECT";
+                        outputParseStep("匹配终结符: " + matchedValue);
                         // 开始构建SELECT节点
                         astStack.push(new SelectNode());
                     } else if (top.equals("CREATE") && currentToken.getValue().equalsIgnoreCase("CREATE")) {
                         matched = true;
                         matchedValue = "CREATE";
+                        outputParseStep("匹配终结符: " + matchedValue);
                         // 开始构建CREATE TABLE节点
                         astStack.push(new CreateTableNode());
                     } else if (top.equals("TABLE") && currentToken.getValue().equalsIgnoreCase("TABLE")) {
                         matched = true;
                         matchedValue = "TABLE";
+                        outputParseStep("匹配终结符: " + matchedValue);
                     } else if (top.equals("INSERT") && currentToken.getValue().equalsIgnoreCase("INSERT")) {
                         matched = true;
                         matchedValue = "INSERT";
+                        outputParseStep("匹配终结符: " + matchedValue);
                         // 开始构建INSERT节点
                         astStack.push(new InsertNode());
                     } else if (top.equals("INTO") && currentToken.getValue().equalsIgnoreCase("INTO")) {
                         matched = true;
                         matchedValue = "INTO";
+                        outputParseStep("匹配终结符: " + matchedValue);
                     } else if (top.equals("VALUES") && currentToken.getValue().equalsIgnoreCase("VALUES")) {
                         matched = true;
                         matchedValue = "VALUES";
+                        outputParseStep("匹配终结符: " + matchedValue);
                     } else if (top.equals("DELETE") && currentToken.getValue().equalsIgnoreCase("DELETE")) {
                         matched = true;
                         matchedValue = "DELETE";
+                        outputParseStep("匹配终结符: " + matchedValue);
                         // 开始构建DELETE节点
                         astStack.push(new DeleteNode());
                     } else if (top.equals("UPDATE") && currentToken.getValue().equalsIgnoreCase("UPDATE")) {
                         matched = true;
                         matchedValue = "UPDATE";
+                        outputParseStep("匹配终结符: " + matchedValue);
                         // 开始构建UPDATE节点
                         astStack.push(new UpdateNode());
                     } else if (top.equals("SET") && currentToken.getValue().equalsIgnoreCase("SET")) {
@@ -357,11 +386,13 @@ public class SQLParser {
                     } else {
                         // 错误处理
                         recordStep("错误: 期望 " + top + " 但找到 " + getCurrentTokenType() + ":" + getCurrentTokenValue());
+                        outputParseStep("匹配失败: 期望 " + top + " 但找到 " + getCurrentTokenType() + ":" + getCurrentTokenValue());
                         return error("语法错误: 期望 " + top + " 但找到 " + getCurrentTokenType() + ":" + getCurrentTokenValue());
                     }
                 } else {
                     // 输入结束但栈未空
                     recordStep("错误: 期望 " + top + " 但输入已结束");
+                    outputParseStep("输入结束错误: 期望 " + top + " 但输入已结束");
                     return error("语法错误: 期望 " + top + " 但输入已结束");
                 }
             }
@@ -384,9 +415,11 @@ public class SQLParser {
                     handleASTConstruction(top, production);
 
                     recordStep("用(" + (step-1) + ") " + top + " → " + production);
+                    outputParseStep("应用产生式: " + top + " → " + production);
                 } else {
                     // 错误处理
                     recordStep("错误: 没有为 " + top + " 和 " + getCurrentTokenType() + ":" + getCurrentTokenValue() + " 找到产生式");
+                    outputParseStep("语法错误: 没有为 " + top + " 和 " + getCurrentTokenType() + ":" + getCurrentTokenValue() + " 找到产生式");
                     return error("语法错误: 没有为 " + top + " 和 " + getCurrentTokenType() + ":" + getCurrentTokenValue() + " 找到产生式");
                 }
             }
@@ -394,9 +427,11 @@ public class SQLParser {
             // 检查是否到达输入结束
             if (getCurrentToken() == null && parseStack.peek().equals("$")) {
                 recordStep("接受(Accept)");
+                outputParseStep("语法分析成功 - 接受状态");
                 break;
             } else if (getCurrentToken() == null && !parseStack.peek().equals("$")) {
                 recordStep("错误: 输入已结束但栈未空");
+                outputParseStep("语法错误: 输入已结束但栈未空");
                 return error("语法错误: 输入已结束但栈未空");
             }
         }
@@ -903,6 +938,7 @@ public class SQLParser {
 
     // 错误处理
     private ASTNode error(String message) {
+        outputParseStep("语法错误: " + message);
         System.err.println(message);
         return null;
     }

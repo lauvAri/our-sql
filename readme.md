@@ -71,7 +71,15 @@ npm run start
 
 支持的基础SQL语句包括： <code>create table</code>, <code>insert into</code>, <code>select from</code>, <code>delete from</code>；高级SQL语句包括：<code>show tables</code>, <code>update</code>, <code>limit</code>, <code>order by</code>
 
+### 功能测试
+
+通过执行**18**条SQL语句，进行功能测试，自动化测试脚本见`scripts/run_test.sh`，测试结果保存在日志文件中。
+
+这18条测试语句涵盖`create table`, `insert into`, `select from`, `limit`, `order by`, `update`, `delete`等语句，其中既有合法的SQL语句，也有不合法的SQL语句，每个测试用例均给出了预期的输出，详见`testcase.md`
+
 ### 性能测试
+
+通过执行**1000**条插入语句，进行性能测试，测试脚本见`scripts/run_insert_benchmark.sh`, 测试结果为插入1000条数据，耗时约为2.4s(这是采用多线程IO优化后的结果，在优化前，我们测试结果为插入1000条数据，耗时约为4.8s)
 
 ![benchmark](assets/benchmark.png)
 

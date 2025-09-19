@@ -26,12 +26,12 @@ our-sql
 ```
 ## 构建与运行
 
-开发环境：Java 21 + Maven 3.9.9
+开发环境：Java 21 + Maven 3.9.9; Node.js 22
 
 ### 构建CLI
 ```bash
 mvn clean package # 构建项目
-java -jar ./target/our-sql-1.0-SNAPSHOT.jar # 运行项目
+java -jar ./target/our-sql-1.0-SNAPSHOT.jar # 运行项目, 在执行这条命令之前，请通过java --version检测Java版本是否为21，否则无法启动项目
 ```
 
 接下来你会进入一个以`oursql> `开头的交互式命令行，你可以在里面测试[sql语句](testcase.md)
